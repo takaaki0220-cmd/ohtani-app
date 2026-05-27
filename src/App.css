@@ -6,6 +6,14 @@
   padding: calc(56px + env(safe-area-inset-top, 0px)) 24px 72px;
 }
 
+/* PWA standalone 起動時: Dynamic Island/ノッチを避けてコンテンツを下げる
+   iOS では env(safe-area-inset-top) が 0 を返すことがあるため最低値を確保 */
+@media all and (display-mode: standalone) {
+  .hero {
+    padding-top: max(96px, calc(env(safe-area-inset-top, 0px) + 56px));
+  }
+}
+
 .hero-inner { max-width: 880px; margin: 0 auto; }
 
 .eyebrow {
@@ -126,6 +134,7 @@
     background: transparent;
     overflow-y: auto;
     padding: 0;
+    padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     animation: slideIn 0.22s ease-out;
     -webkit-overflow-scrolling: touch;
