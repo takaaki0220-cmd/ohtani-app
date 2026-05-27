@@ -4,7 +4,6 @@ import './App.css'
 const PLAYER_ID = 660271
 const API_BASE = 'https://statsapi.mlb.com/api/v1'
 
-// label = カード/見出しに出す日本語、api = MLB API の leaderCategory キー
 const HITTING_CATEGORIES = [
   { api: 'homeRuns', label: '本塁打' },
   { api: 'battingAverage', label: '打率' },
@@ -152,8 +151,11 @@ function App() {
         {loading && <div className="loading">読み込み中...</div>}
         {error && <div className="error">エラー: {error}</div>}
         {!loading && !error && tab === 'hitting' && (
-          <HittingView
+          <StatsView
+            group="hitting"
             stats={stats?.hitting}
+            items={buildHittingItems(stats?.hitting)}
+            headlineLabel={<>ホームラン<br />HOME RUNS</>}
             leaders={leaders}
             leagueFilter={leagueFilter}
             setLeagueFilter={setLeagueFilter}
@@ -162,8 +164,11 @@ function App() {
           />
         )}
         {!loading && !error && tab === 'pitching' && (
-          <PitchingView
+          <StatsView
+            group="pitching"
             stats={stats?.pitching}
+            items={buildPitchingItems(stats?.pitching)}
+            headlineLabel={<>奪三振<br />STRIKEOUTS</>}
             leaders={leaders}
             leagueFilter={leagueFilter}
             setLeagueFilter={setLeagueFilter}
@@ -178,140 +183,87 @@ function App() {
   )
 }
 
-function HittingView({ stats, leaders, leagueFilter, setLeagueFilter, selected, onSelect }) {
-  if (!stats) return <div className="empty">この期間の打撃成績はありません</div>
-  // 表示する打撃指標 — ランキングがあるものは api キーを設定
-  const items = [
-    { v: stats.avg, k: '打率 AVG', api: 'battingAverage' },
-    { v: stats.rbi, k: '打点 RBI', api: 'runsBattedIn' },
-    { v: stats.hits, k: '安打 H', api: 'hits' },
-    { v: stats.runs, k: '得点 R', api: 'runs' },
-    { v: stats.stolenBases, k: '盗塁 SB', api: 'stolenBases' },
-    { v: stats.ops, k: 'OPS', api: 'onBasePlusSlugging' },
-    { v: stats.obp, k: '出塁率 OBP', api: 'onBasePercentage' },
-    { v: stats.slg, k: '長打率 SLG', api: 'sluggingPercentage' },
-    { v: stats.doubles, k: '二塁打 2B', api: 'doubles' },
-    { v: stats.gamesPlayed, k: '試合 G' },
-    { v: stats.atBats, k: '打数 AB' },
-    { v: stats.strikeOuts, k: '三振 SO' },
-    { v: stats.baseOnBalls, k: '四球 BB' },
+function buildHittingItems(s) {
+  if (!s) return []
+  return [
+    { api: 'homeRuns', label: '本塁打', sub: 'HR', v: s.homeRuns, headline: true },
+    { api: 'battingAverage', label: '打率', sub: 'AVG', v: s.avg },
+    { api: 'runsBattedIn', label: '打点', sub: 'RBI', v: s.rbi },
+    { api: 'hits', label: '安打', sub: 'H', v: s.hits },
+    { api: 'runs', label: '得点', sub: 'R', v: s.runs },
+    { api: 'stolenBases', label: '盗塁', sub: 'SB', v: s.stolenBases },
+    { api: 'onBasePlusSlugging', label: 'OPS', sub: '', v: s.ops },
+    { api: 'onBasePercentage', label: '出塁率', sub: 'OBP', v: s.obp },
+    { api: 'sluggingPercentage', label: '長打率', sub: 'SLG', v: s.slg },
+    { api: 'doubles', label: '二塁打', sub: '2B', v: s.doubles },
+    { label: '試合', sub: 'G', v: s.gamesPlayed },
+    { label: '打数', sub: 'AB', v: s.atBats },
+    { label: '三振', sub: 'SO', v: s.strikeOuts },
+    { label: '四球', sub: 'BB', v: s.baseOnBalls },
   ]
-  return (
-    <>
-      <HeadlineStat
-        v={stats.homeRuns}
-        label={<>ホームラン<br />HOME RUNS</>}
-        apiKey="homeRuns"
-        selected={selected}
-        onSelect={onSelect}
-      />
-      <RankingPanel
-        show={selected === 'homeRuns'}
-        title="本塁打"
-        leaders={leaders}
-        group="hitting"
-        apiKey="homeRuns"
-        leagueFilter={leagueFilter}
-        setLeagueFilter={setLeagueFilter}
-        onClose={() => onSelect('homeRuns')}
-      />
-      <StatGrid
-        items={items}
-        group="hitting"
-        leaders={leaders}
-        selected={selected}
-        onSelect={onSelect}
-        leagueFilter={leagueFilter}
-        setLeagueFilter={setLeagueFilter}
-      />
-    </>
-  )
 }
 
-function PitchingView({ stats, leaders, leagueFilter, setLeagueFilter, selected, onSelect }) {
-  if (!stats) return <div className="empty">この期間の投手成績はありません</div>
-  const items = [
-    { v: stats.era, k: '防御率 ERA', api: 'earnedRunAverage' },
-    { v: stats.wins, k: '勝利 W', api: 'wins' },
-    { v: stats.losses, k: '敗戦 L' },
-    { v: stats.whip, k: 'WHIP', api: 'walksAndHitsPerInningPitched' },
-    { v: stats.inningsPitched, k: '投球回 IP', api: 'inningsPitched' },
-    { v: stats.saves, k: 'セーブ SV', api: 'saves' },
-    { v: stats.gamesStarted, k: '先発 GS' },
-    { v: stats.strikeoutsPer9Inn ?? stats.strikeoutsPer9, k: 'K/9' },
-    { v: stats.baseOnBalls, k: '与四球 BB' },
-    { v: stats.hits, k: '被安打 H' },
+function buildPitchingItems(s) {
+  if (!s) return []
+  return [
+    { api: 'strikeouts', label: '奪三振', sub: 'K', v: s.strikeOuts, headline: true },
+    { api: 'earnedRunAverage', label: '防御率', sub: 'ERA', v: s.era },
+    { api: 'wins', label: '勝利', sub: 'W', v: s.wins },
+    { label: '敗戦', sub: 'L', v: s.losses },
+    { api: 'walksAndHitsPerInningPitched', label: 'WHIP', sub: '', v: s.whip },
+    { api: 'inningsPitched', label: '投球回', sub: 'IP', v: s.inningsPitched },
+    { api: 'saves', label: 'セーブ', sub: 'SV', v: s.saves },
+    { label: '先発', sub: 'GS', v: s.gamesStarted },
+    { label: 'K/9', sub: '', v: s.strikeoutsPer9Inn ?? s.strikeoutsPer9 },
+    { label: '与四球', sub: 'BB', v: s.baseOnBalls },
+    { label: '被安打', sub: 'H', v: s.hits },
   ]
-  return (
-    <>
-      <HeadlineStat
-        v={stats.strikeOuts}
-        label={<>奪三振<br />STRIKEOUTS</>}
-        apiKey="strikeouts"
-        selected={selected}
-        onSelect={onSelect}
-      />
-      <RankingPanel
-        show={selected === 'strikeouts'}
-        title="奪三振"
-        leaders={leaders}
-        group="pitching"
-        apiKey="strikeouts"
-        leagueFilter={leagueFilter}
-        setLeagueFilter={setLeagueFilter}
-        onClose={() => onSelect('strikeouts')}
-      />
-      <StatGrid
-        items={items}
-        group="pitching"
-        leaders={leaders}
-        selected={selected}
-        onSelect={onSelect}
-        leagueFilter={leagueFilter}
-        setLeagueFilter={setLeagueFilter}
-      />
-    </>
-  )
 }
 
-// stat-grid を行ごとに描画し、選択された行の直下にランキングを挿入する
-function StatGrid({ items, group, leaders, selected, onSelect, leagueFilter, setLeagueFilter }) {
-  const PER_ROW = 3
-  const rows = []
-  for (let i = 0; i < items.length; i += PER_ROW) rows.push(items.slice(i, i + PER_ROW))
+function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, setLeagueFilter, selected, onSelect }) {
+  if (!stats) return <div className="empty">この期間の{group === 'hitting' ? '打撃' : '投手'}成績はありません</div>
+  const headline = items.find((it) => it.headline)
+  const rest = items.filter((it) => !it.headline)
+  const selectedItem = items.find((it) => it.api && it.api === selected)
   return (
-    <div className="stat-rows">
-      {rows.map((row, ri) => {
-        const selectedInRow = row.find((it) => it.api && it.api === selected)
-        return (
-          <div key={ri}>
-            <div className="stat-grid">
-              {row.map((it) => (
-                <StatCard
-                  key={it.k}
-                  v={it.v}
-                  k={it.k}
-                  clickable={!!it.api}
-                  isSelected={it.api === selected}
-                  onClick={it.api ? () => onSelect(it.api) : undefined}
-                />
-              ))}
-            </div>
-            {selectedInRow && (
-              <RankingPanel
-                show={true}
-                title={selectedInRow.k.split(' ')[0]}
-                leaders={leaders}
-                group={group}
-                apiKey={selectedInRow.api}
-                leagueFilter={leagueFilter}
-                setLeagueFilter={setLeagueFilter}
-                onClose={() => onSelect(selectedInRow.api)}
-              />
-            )}
-          </div>
-        )
-      })}
+    <div className="detail-layout">
+      <div className="detail-main">
+        {headline && (
+          <HeadlineStat
+            v={headline.v}
+            label={headlineLabel}
+            apiKey={headline.api}
+            selected={selected}
+            onSelect={onSelect}
+          />
+        )}
+        <div className="stat-grid">
+          {rest.map((it) => (
+            <StatCard
+              key={it.label + (it.sub || '')}
+              v={it.v}
+              label={it.label}
+              sub={it.sub}
+              clickable={!!it.api}
+              isSelected={it.api === selected}
+              onClick={it.api ? () => onSelect(it.api) : undefined}
+            />
+          ))}
+        </div>
+      </div>
+      <aside className="detail-side">
+        <div className="detail-side-sticky">
+          <RankingPanel
+            selected={selected}
+            selectedItem={selectedItem || (headline && headline.api === selected ? headline : null)}
+            group={group}
+            leaders={leaders}
+            leagueFilter={leagueFilter}
+            setLeagueFilter={setLeagueFilter}
+            onClose={() => onSelect(selected)}
+          />
+        </div>
+      </aside>
     </div>
   )
 }
@@ -325,12 +277,12 @@ function HeadlineStat({ v, label, apiKey, selected, onSelect }) {
     >
       <div className="num">{v ?? '—'}</div>
       <div className="label">{label}</div>
-      <span className="reveal-hint">{active ? 'ランキングを閉じる' : 'タップでランキング'}</span>
+      <span className="reveal-hint">{active ? '選択中' : 'タップでランキング'}</span>
     </button>
   )
 }
 
-function StatCard({ v, k, clickable, isSelected, onClick }) {
+function StatCard({ v, label, sub, clickable, isSelected, onClick }) {
   const Tag = clickable ? 'button' : 'div'
   return (
     <Tag
@@ -339,19 +291,31 @@ function StatCard({ v, k, clickable, isSelected, onClick }) {
       type={clickable ? 'button' : undefined}
     >
       <div className="v">{v ?? '—'}</div>
-      <div className="k">{k}</div>
-      {clickable && <span className="card-caret" aria-hidden>{isSelected ? '▴' : '▾'}</span>}
+      <div className="k">
+        {label}
+        {sub && <span className="k-sub"> {sub}</span>}
+      </div>
     </Tag>
   )
 }
 
-function RankingPanel({ show, title, leaders, group, apiKey, leagueFilter, setLeagueFilter, onClose }) {
-  if (!show) return null
-  const data = leaders?.[leagueFilter]?.[group]?.[apiKey] || []
+function RankingPanel({ selected, selectedItem, group, leaders, leagueFilter, setLeagueFilter, onClose }) {
+  if (!selected || !selectedItem) {
+    return (
+      <div className="rank-panel rank-panel-empty">
+        <div className="rank-empty-icon" aria-hidden>📊</div>
+        <div className="rank-empty-text">
+          左の数値カードをタップすると<br />
+          MLBランキングが表示されます
+        </div>
+      </div>
+    )
+  }
+  const data = leaders?.[leagueFilter]?.[group]?.[selected] || []
   return (
     <div className="rank-panel">
       <div className="rank-panel-head">
-        <h3 className="rank-panel-title">{title} ランキング</h3>
+        <h3 className="rank-panel-title">{selectedItem.label} ランキング</h3>
         <button className="rank-close" onClick={onClose} aria-label="閉じる">×</button>
       </div>
       <div className="subtabs">
