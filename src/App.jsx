@@ -61,11 +61,26 @@ async function fetchPlayerInfo() {
 
 async function fetchLeaders(category, season, leagueId, group) {
   const leaguePart = leagueId ? `&leagueId=${leagueId}` : ''
-  const url = `${API_BASE}/stats/leaders?leaderCategories=${category}&season=${season}&sportId=1${leaguePart}&limit=10&statGroup=${group}`
+  // limit を大きめに取って、大谷の順位を取れるようにする（表示する一覧は別途上位のみに絞る）
+  const url = `${API_BASE}/stats/leaders?leaderCategories=${category}&season=${season}&sportId=1${leaguePart}&limit=200&statGroup=${group}`
   const res = await fetch(url)
   if (!res.ok) return []
   const data = await res.json()
   return data.leagueLeaders?.[0]?.leaders || []
+}
+
+function findPlayerRank(leadersList) {
+  if (!leadersList) return null
+  const entry = leadersList.find((l) => String(l.person?.id) === String(PLAYER_ID))
+  return entry?.rank ?? null
+}
+
+function getRanks(leaders, group, apiKey) {
+  if (!leaders || !apiKey) return null
+  return {
+    all: findPlayerRank(leaders.all?.[group]?.[apiKey]),
+    nl: findPlayerRank(leaders.nl?.[group]?.[apiKey]),
+  }
 }
 
 function App() {
@@ -154,7 +169,7 @@ function App() {
           <StatsView
             group="hitting"
             stats={stats?.hitting}
-            items={buildHittingItems(stats?.hitting)}
+            items={buildHittingItems(stats?.hitting, leaders)}
             headlineLabel={<>ホームラン<br />HOME RUNS</>}
             leaders={leaders}
             leagueFilter={leagueFilter}
@@ -167,7 +182,7 @@ function App() {
           <StatsView
             group="pitching"
             stats={stats?.pitching}
-            items={buildPitchingItems(stats?.pitching)}
+            items={buildPitchingItems(stats?.pitching, leaders)}
             headlineLabel={<>奪三振<br />STRIKEOUTS</>}
             leaders={leaders}
             leagueFilter={leagueFilter}
@@ -183,19 +198,20 @@ function App() {
   )
 }
 
-function buildHittingItems(s) {
+function buildHittingItems(s, leaders) {
   if (!s) return []
+  const r = (api) => getRanks(leaders, 'hitting', api)
   return [
-    { api: 'homeRuns', label: '本塁打', sub: 'HR', v: s.homeRuns, headline: true },
-    { api: 'battingAverage', label: '打率', sub: 'AVG', v: s.avg },
-    { api: 'runsBattedIn', label: '打点', sub: 'RBI', v: s.rbi },
-    { api: 'hits', label: '安打', sub: 'H', v: s.hits },
-    { api: 'runs', label: '得点', sub: 'R', v: s.runs },
-    { api: 'stolenBases', label: '盗塁', sub: 'SB', v: s.stolenBases },
-    { api: 'onBasePlusSlugging', label: 'OPS', sub: '', v: s.ops },
-    { api: 'onBasePercentage', label: '出塁率', sub: 'OBP', v: s.obp },
-    { api: 'sluggingPercentage', label: '長打率', sub: 'SLG', v: s.slg },
-    { api: 'doubles', label: '二塁打', sub: '2B', v: s.doubles },
+    { api: 'homeRuns', label: '本塁打', sub: 'HR', v: s.homeRuns, headline: true, ranks: r('homeRuns') },
+    { api: 'battingAverage', label: '打率', sub: 'AVG', v: s.avg, ranks: r('battingAverage') },
+    { api: 'runsBattedIn', label: '打点', sub: 'RBI', v: s.rbi, ranks: r('runsBattedIn') },
+    { api: 'hits', label: '安打', sub: 'H', v: s.hits, ranks: r('hits') },
+    { api: 'runs', label: '得点', sub: 'R', v: s.runs, ranks: r('runs') },
+    { api: 'stolenBases', label: '盗塁', sub: 'SB', v: s.stolenBases, ranks: r('stolenBases') },
+    { api: 'onBasePlusSlugging', label: 'OPS', sub: '', v: s.ops, ranks: r('onBasePlusSlugging') },
+    { api: 'onBasePercentage', label: '出塁率', sub: 'OBP', v: s.obp, ranks: r('onBasePercentage') },
+    { api: 'sluggingPercentage', label: '長打率', sub: 'SLG', v: s.slg, ranks: r('sluggingPercentage') },
+    { api: 'doubles', label: '二塁打', sub: '2B', v: s.doubles, ranks: r('doubles') },
     { label: '試合', sub: 'G', v: s.gamesPlayed },
     { label: '打数', sub: 'AB', v: s.atBats },
     { label: '三振', sub: 'SO', v: s.strikeOuts },
@@ -203,16 +219,17 @@ function buildHittingItems(s) {
   ]
 }
 
-function buildPitchingItems(s) {
+function buildPitchingItems(s, leaders) {
   if (!s) return []
+  const r = (api) => getRanks(leaders, 'pitching', api)
   return [
-    { api: 'strikeouts', label: '奪三振', sub: 'K', v: s.strikeOuts, headline: true },
-    { api: 'earnedRunAverage', label: '防御率', sub: 'ERA', v: s.era },
-    { api: 'wins', label: '勝利', sub: 'W', v: s.wins },
+    { api: 'strikeouts', label: '奪三振', sub: 'K', v: s.strikeOuts, headline: true, ranks: r('strikeouts') },
+    { api: 'earnedRunAverage', label: '防御率', sub: 'ERA', v: s.era, ranks: r('earnedRunAverage') },
+    { api: 'wins', label: '勝利', sub: 'W', v: s.wins, ranks: r('wins') },
     { label: '敗戦', sub: 'L', v: s.losses },
-    { api: 'walksAndHitsPerInningPitched', label: 'WHIP', sub: '', v: s.whip },
-    { api: 'inningsPitched', label: '投球回', sub: 'IP', v: s.inningsPitched },
-    { api: 'saves', label: 'セーブ', sub: 'SV', v: s.saves },
+    { api: 'walksAndHitsPerInningPitched', label: 'WHIP', sub: '', v: s.whip, ranks: r('walksAndHitsPerInningPitched') },
+    { api: 'inningsPitched', label: '投球回', sub: 'IP', v: s.inningsPitched, ranks: r('inningsPitched') },
+    { api: 'saves', label: 'セーブ', sub: 'SV', v: s.saves, ranks: r('saves') },
     { label: '先発', sub: 'GS', v: s.gamesStarted },
     { label: 'K/9', sub: '', v: s.strikeoutsPer9Inn ?? s.strikeoutsPer9 },
     { label: '与四球', sub: 'BB', v: s.baseOnBalls },
@@ -357,6 +374,7 @@ function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, 
               clickable={!!it.api}
               isSelected={it.api === selected}
               onClick={it.api ? () => onSelect(it.api) : undefined}
+              ranks={it.ranks}
             />
           ))}
         </div>
@@ -401,7 +419,7 @@ function HeadlineStat({ v, label, apiKey, selected, onSelect }) {
   )
 }
 
-function StatCard({ v, label, sub, clickable, isSelected, onClick }) {
+function StatCard({ v, label, sub, clickable, isSelected, onClick, ranks }) {
   const Tag = clickable ? 'button' : 'div'
   return (
     <Tag
@@ -414,6 +432,18 @@ function StatCard({ v, label, sub, clickable, isSelected, onClick }) {
         {label}
         {sub && <span className="k-sub"> {sub}</span>}
       </div>
+      {ranks && (
+        <div className="stat-rank">
+          <div className="stat-rank-line">
+            <span className="stat-rank-scope">総合</span>
+            <span className="stat-rank-val">{ranks.all ? `${ranks.all}位` : '圏外'}</span>
+          </div>
+          <div className="stat-rank-line">
+            <span className="stat-rank-scope">ナ・リーグ</span>
+            <span className="stat-rank-val">{ranks.nl ? `${ranks.nl}位` : '圏外'}</span>
+          </div>
+        </div>
+      )}
     </Tag>
   )
 }
@@ -456,7 +486,7 @@ function RankingPanel({ selected, selectedItem, group, leaders, leagueFilter, se
 function LeaderList({ leaders }) {
   return (
     <div className="rank-list">
-      {leaders.map((l) => {
+      {leaders.slice(0, 10).map((l) => {
         const isOhtani = String(l.person?.id) === String(PLAYER_ID)
         return (
           <div key={`${l.rank}-${l.person?.id}`} className={`rank-row ${isOhtani ? 'highlight' : ''}`}>
