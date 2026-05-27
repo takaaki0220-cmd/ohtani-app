@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 
 const PLAYER_ID = 660271
@@ -224,10 +224,119 @@ function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, 
   if (!stats) return <div className="empty">この期間の{group === 'hitting' ? '打撃' : '投手'}成績はありません</div>
   const headline = items.find((it) => it.headline)
   const rest = items.filter((it) => !it.headline)
-  const selectedItem = items.find((it) => it.api && it.api === selected)
-  const handleClose = () => onSelect(selected)
+
+  const drawerRef = useRef(null)
+  const backdropRef = useRef(null)
+  const touchStartXRef = useRef(0)
+  const touchStartYRef = useRef(0)
+  const touchDeltaRef = useRef(0)
+  const isSwipingRef = useRef(false)
+  const lastSelectedRef = useRef(null)
+
+  const [closing, setClosing] = useState(false)
+
+  useEffect(() => {
+    if (selected) lastSelectedRef.current = selected
+  }, [selected])
+
+  // 閉じるアニメーション中も内容を保持するために displaySelected を使う
+  const displaySelected = selected || (closing ? lastSelectedRef.current : null)
+  const showDrawer = displaySelected != null
+  const selectedItem = items.find((it) => it.api && it.api === displaySelected)
+
+  function resetStyles() {
+    if (drawerRef.current) {
+      drawerRef.current.style.transition = ''
+      drawerRef.current.style.transform = ''
+    }
+    if (backdropRef.current) {
+      backdropRef.current.style.transition = ''
+      backdropRef.current.style.opacity = ''
+    }
+  }
+
+  function animateClose() {
+    if (closing || !selected) return
+    setClosing(true)
+    if (drawerRef.current) {
+      drawerRef.current.style.transition = 'transform 0.22s ease-in'
+      drawerRef.current.style.transform = 'translateX(100%)'
+    }
+    if (backdropRef.current) {
+      backdropRef.current.style.transition = 'opacity 0.22s ease-in'
+      backdropRef.current.style.opacity = '0'
+    }
+    setTimeout(() => {
+      onSelect(selected) // toggleSelect により null に
+      setClosing(false)
+      resetStyles()
+    }, 220)
+  }
+
+  function handleClose() {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 880px)').matches) {
+      animateClose()
+    } else {
+      onSelect(selected)
+    }
+  }
+
+  function handleTouchStart(e) {
+    if (closing) return
+    touchStartXRef.current = e.touches[0].clientX
+    touchStartYRef.current = e.touches[0].clientY
+    touchDeltaRef.current = 0
+    isSwipingRef.current = false
+    if (drawerRef.current) {
+      drawerRef.current.style.transition = 'none'
+      drawerRef.current.style.animation = 'none'
+    }
+  }
+
+  function handleTouchMove(e) {
+    if (closing) return
+    const dx = e.touches[0].clientX - touchStartXRef.current
+    const dy = e.touches[0].clientY - touchStartYRef.current
+    if (!isSwipingRef.current) {
+      // まだスワイプ方向が確定していないとき: 横優位 & 右方向のときだけ確定
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
+      if (Math.abs(dx) > Math.abs(dy) && dx > 0) {
+        isSwipingRef.current = true
+      } else {
+        return // 縦スクロールはそのまま許可
+      }
+    }
+    if (dx > 0) {
+      touchDeltaRef.current = dx
+      if (drawerRef.current) drawerRef.current.style.transform = `translateX(${dx}px)`
+      if (backdropRef.current) {
+        const op = Math.max(0, 0.4 * (1 - dx / 400))
+        backdropRef.current.style.opacity = String(op)
+      }
+    }
+  }
+
+  function handleTouchEnd() {
+    if (closing) return
+    if (touchDeltaRef.current > 80) {
+      animateClose()
+    } else {
+      // バネで戻す
+      if (drawerRef.current) {
+        drawerRef.current.style.transition = 'transform 0.2s ease-out'
+        drawerRef.current.style.transform = ''
+      }
+      if (backdropRef.current) {
+        backdropRef.current.style.transition = 'opacity 0.2s ease-out'
+        backdropRef.current.style.opacity = ''
+      }
+    }
+    touchDeltaRef.current = 0
+    isSwipingRef.current = false
+  }
+
   return (
-    <div className={`detail-layout ${selected ? 'has-selection' : ''}`}>
+    <div className={`detail-layout ${showDrawer ? 'has-selection' : ''}`}>
       <div className="detail-main">
         {headline && (
           <HeadlineStat
@@ -252,12 +361,20 @@ function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, 
           ))}
         </div>
       </div>
-      {selected && <div className="rank-backdrop" onClick={handleClose} aria-hidden />}
-      <aside className={`detail-side ${selected ? 'active' : ''}`}>
+      {showDrawer && (
+        <div className="rank-backdrop" ref={backdropRef} onClick={animateClose} aria-hidden />
+      )}
+      <aside
+        ref={drawerRef}
+        className={`detail-side ${showDrawer ? 'active' : ''}`}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <div className="detail-side-sticky">
           <RankingPanel
-            selected={selected}
-            selectedItem={selectedItem || (headline && headline.api === selected ? headline : null)}
+            selected={displaySelected}
+            selectedItem={selectedItem || (headline && headline.api === displaySelected ? headline : null)}
             group={group}
             leaders={leaders}
             leagueFilter={leagueFilter}
