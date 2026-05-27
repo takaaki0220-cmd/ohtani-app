@@ -7,11 +7,16 @@
 }
 
 /* PWA standalone 起動時: Dynamic Island/ノッチを避けてコンテンツを下げる
-   iOS では env(safe-area-inset-top) が 0 を返すことがあるため最低値を確保 */
+   iOS では env(safe-area-inset-top) が 0 を返すことがあるため最低値を確保
+   media query が効かない iOS の保険として JS で付けた .pwa-standalone も併用 */
 @media all and (display-mode: standalone) {
   .hero {
     padding-top: max(96px, calc(env(safe-area-inset-top, 0px) + 56px));
   }
+}
+
+html.pwa-standalone .hero {
+  padding-top: max(96px, calc(env(safe-area-inset-top, 0px) + 56px));
 }
 
 .hero-inner { max-width: 880px; margin: 0 auto; }

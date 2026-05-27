@@ -101,6 +101,14 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // PWA standalone モード検出 → html に class を付ける（CSS media query のフォールバック）
+  useEffect(() => {
+    const isStandalone =
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true
+    document.documentElement.classList.toggle('pwa-standalone', isStandalone)
+  }, [])
+
   useEffect(() => {
     let cancelled = false
     async function load() {
