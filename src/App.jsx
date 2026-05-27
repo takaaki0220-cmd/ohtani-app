@@ -1,8 +1,36 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
 const PLAYER_ID = 660271
 const API_BASE = 'https://statsapi.mlb.com/api/v1'
+
+const HITTING_CATEGORIES = [
+  { key: 'homeRuns', label: '本塁打' },
+  { key: 'battingAverage', label: '打率' },
+  { key: 'runsBattedIn', label: '打点' },
+  { key: 'hits', label: '安打' },
+  { key: 'runs', label: '得点' },
+  { key: 'onBasePercentage', label: '出塁率' },
+  { key: 'sluggingPercentage', label: '長打率' },
+  { key: 'onBasePlusSlugging', label: 'OPS' },
+  { key: 'stolenBases', label: '盗塁' },
+  { key: 'doubles', label: '二塁打' },
+]
+
+const PITCHING_CATEGORIES = [
+  { key: 'wins', label: '勝利' },
+  { key: 'earnedRunAverage', label: '防御率' },
+  { key: 'strikeouts', label: '奪三振' },
+  { key: 'walksAndHitsPerInningPitched', label: 'WHIP' },
+  { key: 'inningsPitched', label: '投球回' },
+  { key: 'saves', label: 'セーブ' },
+]
+
+const LEAGUES = [
+  { key: 'all', label: '総合', id: null },
+  { key: 'al', label: 'ア・リーグ', id: 103 },
+  { key: 'nl', label: 'ナ・リーグ', id: 104 },
+]
 
 function getInitialSeason() {
   const now = new Date()
@@ -31,9 +59,9 @@ async function fetchPlayerInfo() {
   return data.people?.[0]
 }
 
-async function fetchLeaders(category, season, leagueId) {
+async function fetchLeaders(category, season, leagueId, group) {
   const leaguePart = leagueId ? `&leagueId=${leagueId}` : ''
-  const url = `${API_BASE}/stats/leaders?leaderCategories=${category}&season=${season}&sportId=1${leaguePart}&limit=10&statGroup=hitting`
+  const url = `${API_BASE}/stats/leaders?leaderCategories=${category}&season=${season}&sportId=1${leaguePart}&limit=10&statGroup=${group}`
   const res = await fetch(url)
   if (!res.ok) return []
   const data = await res.json()
@@ -44,11 +72,7 @@ function App() {
   const [season, setSeason] = useState(getInitialSeason())
   const [stats, setStats] = useState(null)
   const [player, setPlayer] = useState(null)
-  const [leaders, setLeaders] = useState({
-    all: { hr: [], avg: [] },
-    al: { hr: [], avg: [] },
-    nl: { hr: [], avg: [] },
-  })
+  const [leaders, setLeaders] = useState(null)
   const [leagueFilter, setLeagueFilter] = useState('all')
   const [tab, setTab] = useState('hitting')
   const [loading, setLoading] = useState(true)
@@ -67,23 +91,27 @@ function App() {
           yr = yr - 1
           s = await fetchSeasonStats(yr)
         }
-        const [allHr, allAvg, alHr, alAvg, nlHr, nlAvg] = await Promise.all([
-          fetchLeaders('homeRuns', yr),
-          fetchLeaders('battingAverage', yr),
-          fetchLeaders('homeRuns', yr, 103),
-          fetchLeaders('battingAverage', yr, 103),
-          fetchLeaders('homeRuns', yr, 104),
-          fetchLeaders('battingAverage', yr, 104),
-        ])
+        // 全リーグ × 全カテゴリ × 両グループ をまとめて取得
+        const requests = []
+        for (const lg of LEAGUES) {
+          for (const c of HITTING_CATEGORIES) {
+            requests.push({ league: lg.key, group: 'hitting', cat: c.key, p: fetchLeaders(c.key, yr, lg.id, 'hitting') })
+          }
+          for (const c of PITCHING_CATEGORIES) {
+            requests.push({ league: lg.key, group: 'pitching', cat: c.key, p: fetchLeaders(c.key, yr, lg.id, 'pitching') })
+          }
+        }
+        const results = await Promise.all(requests.map((r) => r.p))
+        const built = { all: { hitting: {}, pitching: {} }, al: { hitting: {}, pitching: {} }, nl: { hitting: {}, pitching: {} } }
+        requests.forEach((r, i) => {
+          built[r.league][r.group][r.cat] = results[i]
+        })
+
         if (cancelled) return
         setPlayer(info)
         setStats(s)
         setSeason(yr)
-        setLeaders({
-          all: { hr: allHr, avg: allAvg },
-          al: { hr: alHr, avg: alAvg },
-          nl: { hr: nlHr, avg: nlAvg },
-        })
+        setLeaders(built)
       } catch (e) {
         if (!cancelled) setError(e.message || '読み込みに失敗しました')
       } finally {
@@ -130,7 +158,13 @@ function App() {
           />
         )}
         {!loading && !error && tab === 'pitching' && (
-          <PitchingView stats={stats?.pitching} season={season} />
+          <PitchingView
+            stats={stats?.pitching}
+            leaders={leaders}
+            leagueFilter={leagueFilter}
+            setLeagueFilter={setLeagueFilter}
+            season={season}
+          />
         )}
       </main>
 
@@ -141,8 +175,6 @@ function App() {
 
 function HittingView({ stats, leaders, leagueFilter, setLeagueFilter, season }) {
   if (!stats) return <div className="empty">この期間の打撃成績はありません</div>
-  const current = leaders[leagueFilter] || { hr: [], avg: [] }
-  const leagueLabel = leagueFilter === 'all' ? 'MLB総合' : leagueFilter === 'al' ? 'ア・リーグ' : 'ナ・リーグ'
   return (
     <>
       <div className="headline-stat">
@@ -165,34 +197,20 @@ function HittingView({ stats, leaders, leagueFilter, setLeagueFilter, season }) 
         <Stat v={stats.baseOnBalls} k="四球 BB" />
       </div>
 
-      {(current.hr.length > 0 || current.avg.length > 0) && (
-        <>
-          <h2 className="section-title">{season} ランキング</h2>
-          <div className="subtabs">
-            <button className={`subtab ${leagueFilter === 'all' ? 'active' : ''}`} onClick={() => setLeagueFilter('all')}>総合</button>
-            <button className={`subtab ${leagueFilter === 'al' ? 'active' : ''}`} onClick={() => setLeagueFilter('al')}>ア・リーグ</button>
-            <button className={`subtab ${leagueFilter === 'nl' ? 'active' : ''}`} onClick={() => setLeagueFilter('nl')}>ナ・リーグ</button>
-          </div>
-        </>
-      )}
-
-      {current.hr.length > 0 && (
-        <>
-          <h3 className="rank-title">本塁打 <span className="rank-scope">{leagueLabel}</span></h3>
-          <LeaderList leaders={current.hr} />
-        </>
-      )}
-      {current.avg.length > 0 && (
-        <>
-          <h3 className="rank-title">打率 <span className="rank-scope">{leagueLabel}</span></h3>
-          <LeaderList leaders={current.avg} />
-        </>
-      )}
+      <RankingsBlock
+        title="ランキング"
+        season={season}
+        categories={HITTING_CATEGORIES}
+        group="hitting"
+        leaders={leaders}
+        leagueFilter={leagueFilter}
+        setLeagueFilter={setLeagueFilter}
+      />
     </>
   )
 }
 
-function PitchingView({ stats, season }) {
+function PitchingView({ stats, leaders, leagueFilter, setLeagueFilter, season }) {
   if (!stats) return <div className="empty">この期間の投手成績はありません</div>
   return (
     <>
@@ -211,8 +229,59 @@ function PitchingView({ stats, season }) {
         <Stat v={stats.baseOnBalls} k="与四球 BB" />
         <Stat v={stats.hits} k="被安打 H" />
       </div>
-      <div className="footer" style={{ paddingTop: 48 }}>※ シーズンによっては投手成績が登録されていない場合があります</div>
+
+      <RankingsBlock
+        title="ランキング"
+        season={season}
+        categories={PITCHING_CATEGORIES}
+        group="pitching"
+        leaders={leaders}
+        leagueFilter={leagueFilter}
+        setLeagueFilter={setLeagueFilter}
+      />
     </>
+  )
+}
+
+function RankingsBlock({ title, season, categories, group, leaders, leagueFilter, setLeagueFilter }) {
+  const data = leaders?.[leagueFilter]?.[group] || {}
+  const visibleCats = useMemo(() => categories.filter((c) => (data[c.key] || []).length > 0), [categories, data])
+  if (visibleCats.length === 0) return null
+  const leagueLabel = LEAGUES.find((l) => l.key === leagueFilter)?.label || ''
+  return (
+    <>
+      <h2 className="section-title">{season} {title}</h2>
+      <div className="subtabs">
+        {LEAGUES.map((l) => (
+          <button
+            key={l.key}
+            className={`subtab ${leagueFilter === l.key ? 'active' : ''}`}
+            onClick={() => setLeagueFilter(l.key)}
+          >
+            {l.label}
+          </button>
+        ))}
+      </div>
+      <div className="rank-sections">
+        {visibleCats.map((c) => (
+          <CollapsibleRanking key={c.key} title={c.label} scope={leagueLabel} leaders={data[c.key]} />
+        ))}
+      </div>
+    </>
+  )
+}
+
+function CollapsibleRanking({ title, scope, leaders }) {
+  const [open, setOpen] = useState(true)
+  return (
+    <section className="rank-section">
+      <button className="rank-section-head" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
+        <span className="rank-section-title">{title}</span>
+        <span className="rank-section-scope">{scope}</span>
+        <span className={`rank-caret ${open ? 'open' : ''}`} aria-hidden>▾</span>
+      </button>
+      {open && <LeaderList leaders={leaders} />}
+    </section>
   )
 }
 
