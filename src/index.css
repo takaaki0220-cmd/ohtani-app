@@ -1,0 +1,35 @@
+:root {
+  --navy: #005A9C;
+  --navy-dark: #003a66;
+  --navy-deep: #001f3a;
+  --ink: #0a1622;
+  --muted: #6b7785;
+  --soft: #f4f6f8;
+  --soft-2: #e9edf1;
+  --white: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--ink);
+  background: var(--white);
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: var(--white);
+}
+
+body { font-feature-settings: "palt"; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+  color: inherit;
+}
