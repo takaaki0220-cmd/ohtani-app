@@ -3,7 +3,7 @@
 .hero {
   background: linear-gradient(180deg, var(--navy-deep) 0%, var(--navy) 100%);
   color: var(--white);
-  padding: 56px 24px 72px;
+  padding: calc(56px + env(safe-area-inset-top, 0px)) 24px 72px;
 }
 
 .hero-inner { max-width: 880px; margin: 0 auto; }
