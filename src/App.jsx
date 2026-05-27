@@ -225,8 +225,9 @@ function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, 
   const headline = items.find((it) => it.headline)
   const rest = items.filter((it) => !it.headline)
   const selectedItem = items.find((it) => it.api && it.api === selected)
+  const handleClose = () => onSelect(selected)
   return (
-    <div className="detail-layout">
+    <div className={`detail-layout ${selected ? 'has-selection' : ''}`}>
       <div className="detail-main">
         {headline && (
           <HeadlineStat
@@ -251,7 +252,8 @@ function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, 
           ))}
         </div>
       </div>
-      <aside className="detail-side">
+      {selected && <div className="rank-backdrop" onClick={handleClose} aria-hidden />}
+      <aside className={`detail-side ${selected ? 'active' : ''}`}>
         <div className="detail-side-sticky">
           <RankingPanel
             selected={selected}
@@ -260,7 +262,7 @@ function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, 
             leaders={leaders}
             leagueFilter={leagueFilter}
             setLeagueFilter={setLeagueFilter}
-            onClose={() => onSelect(selected)}
+            onClose={handleClose}
           />
         </div>
       </aside>

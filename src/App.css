@@ -101,12 +101,61 @@
   top: 20px;
 }
 
+.rank-backdrop { display: none; }
+
 @media (max-width: 880px) {
   .detail-layout {
     grid-template-columns: 1fr;
     gap: 24px;
   }
   .detail-side-sticky { position: static; }
+
+  /* スマホでは未選択時に右側エリア自体を非表示 */
+  .detail-side:not(.active) { display: none; }
+
+  /* 選択時はスライドインの引き出しに */
+  .detail-side.active {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 92vw;
+    max-width: 420px;
+    z-index: 100;
+    background: var(--white);
+    overflow-y: auto;
+    padding: 16px;
+    box-shadow: -8px 0 28px rgba(0, 0, 0, 0.18);
+    animation: slideIn 0.22s ease-out;
+  }
+
+  .detail-side.active .detail-side-sticky {
+    position: static;
+  }
+
+  .rank-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 99;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  /* ドロワー表示中は背景スクロールをロック */
+  .detail-layout.has-selection {
+    /* z-index コンテキストのためのみ */
+  }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .headline-stat {
