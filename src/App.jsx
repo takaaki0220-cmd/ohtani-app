@@ -15,6 +15,10 @@ const HITTING_CATEGORIES = [
   { api: 'onBasePercentage', label: '出塁率' },
   { api: 'sluggingPercentage', label: '長打率' },
   { api: 'doubles', label: '二塁打' },
+  { api: 'walks', label: '四球' },
+  { api: 'strikeouts', label: '三振' },
+  { api: 'gamesPlayed', label: '試合' },
+  { api: 'atBats', label: '打数' },
 ]
 
 const PITCHING_CATEGORIES = [
@@ -24,6 +28,9 @@ const PITCHING_CATEGORIES = [
   { api: 'walksAndHitsPerInningPitched', label: 'WHIP' },
   { api: 'inningsPitched', label: '投球回' },
   { api: 'saves', label: 'セーブ' },
+  { api: 'losses', label: '敗戦' },
+  { api: 'gamesStarted', label: '先発' },
+  { api: 'strikeoutsPer9Inn', label: 'K/9' },
 ]
 
 const LEAGUES = [
@@ -212,10 +219,10 @@ function buildHittingItems(s, leaders) {
     { api: 'onBasePercentage', label: '出塁率', sub: 'OBP', v: s.obp, ranks: r('onBasePercentage') },
     { api: 'sluggingPercentage', label: '長打率', sub: 'SLG', v: s.slg, ranks: r('sluggingPercentage') },
     { api: 'doubles', label: '二塁打', sub: '2B', v: s.doubles, ranks: r('doubles') },
-    { label: '試合', sub: 'G', v: s.gamesPlayed },
-    { label: '打数', sub: 'AB', v: s.atBats },
-    { label: '三振', sub: 'SO', v: s.strikeOuts },
-    { label: '四球', sub: 'BB', v: s.baseOnBalls },
+    { api: 'walks', label: '四球', sub: 'BB', v: s.baseOnBalls, ranks: r('walks') },
+    { api: 'strikeouts', label: '三振', sub: 'SO', v: s.strikeOuts, ranks: r('strikeouts') },
+    { api: 'gamesPlayed', label: '試合', sub: 'G', v: s.gamesPlayed, ranks: r('gamesPlayed') },
+    { api: 'atBats', label: '打数', sub: 'AB', v: s.atBats, ranks: r('atBats') },
   ]
 }
 
@@ -226,12 +233,12 @@ function buildPitchingItems(s, leaders) {
     { api: 'strikeouts', label: '奪三振', sub: 'K', v: s.strikeOuts, headline: true, ranks: r('strikeouts') },
     { api: 'earnedRunAverage', label: '防御率', sub: 'ERA', v: s.era, ranks: r('earnedRunAverage') },
     { api: 'wins', label: '勝利', sub: 'W', v: s.wins, ranks: r('wins') },
-    { label: '敗戦', sub: 'L', v: s.losses },
+    { api: 'losses', label: '敗戦', sub: 'L', v: s.losses, ranks: r('losses') },
     { api: 'walksAndHitsPerInningPitched', label: 'WHIP', sub: '', v: s.whip, ranks: r('walksAndHitsPerInningPitched') },
     { api: 'inningsPitched', label: '投球回', sub: 'IP', v: s.inningsPitched, ranks: r('inningsPitched') },
     { api: 'saves', label: 'セーブ', sub: 'SV', v: s.saves, ranks: r('saves') },
-    { label: '先発', sub: 'GS', v: s.gamesStarted },
-    { label: 'K/9', sub: '', v: s.strikeoutsPer9Inn ?? s.strikeoutsPer9 },
+    { api: 'gamesStarted', label: '先発', sub: 'GS', v: s.gamesStarted, ranks: r('gamesStarted') },
+    { api: 'strikeoutsPer9Inn', label: 'K/9', sub: '', v: s.strikeoutsPer9Inn ?? s.strikeoutsPer9, ranks: r('strikeoutsPer9Inn') },
     { label: '与四球', sub: 'BB', v: s.baseOnBalls },
     { label: '被安打', sub: 'H', v: s.hits },
   ]
