@@ -1,0 +1,13 @@
+{
+  // Cloudflare Workers の設定ファイル
+  // 静的アセット (Vite ビルド成果物) を配信する SPA 構成
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ohtani-app",
+  "compatibility_date": "2026-05-01",
+  "assets": {
+    // npm run build の出力先
+    "directory": "./dist",
+    // SPA のため、見つからないパスは index.html にフォールバック
+    "not_found_handling": "single-page-application"
+  }
+}
