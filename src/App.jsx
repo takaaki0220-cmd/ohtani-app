@@ -31,8 +31,9 @@ async function fetchPlayerInfo() {
   return data.people?.[0]
 }
 
-async function fetchLeaders(category, season) {
-  const url = `${API_BASE}/stats/leaders?leaderCategories=${category}&season=${season}&sportId=1&limit=10&statGroup=hitting`
+async function fetchLeaders(category, season, leagueId) {
+  const leaguePart = leagueId ? `&leagueId=${leagueId}` : ''
+  const url = `${API_BASE}/stats/leaders?leaderCategories=${category}&season=${season}&sportId=1${leaguePart}&limit=10&statGroup=hitting`
   const res = await fetch(url)
   if (!res.ok) return []
   const data = await res.json()
@@ -43,8 +44,12 @@ function App() {
   const [season, setSeason] = useState(getInitialSeason())
   const [stats, setStats] = useState(null)
   const [player, setPlayer] = useState(null)
-  const [hrLeaders, setHrLeaders] = useState([])
-  const [avgLeaders, setAvgLeaders] = useState([])
+  const [leaders, setLeaders] = useState({
+    all: { hr: [], avg: [] },
+    al: { hr: [], avg: [] },
+    nl: { hr: [], avg: [] },
+  })
+  const [leagueFilter, setLeagueFilter] = useState('all')
   const [tab, setTab] = useState('hitting')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -62,16 +67,23 @@ function App() {
           yr = yr - 1
           s = await fetchSeasonStats(yr)
         }
-        const [hr, avg] = await Promise.all([
+        const [allHr, allAvg, alHr, alAvg, nlHr, nlAvg] = await Promise.all([
           fetchLeaders('homeRuns', yr),
           fetchLeaders('battingAverage', yr),
+          fetchLeaders('homeRuns', yr, 103),
+          fetchLeaders('battingAverage', yr, 103),
+          fetchLeaders('homeRuns', yr, 104),
+          fetchLeaders('battingAverage', yr, 104),
         ])
         if (cancelled) return
         setPlayer(info)
         setStats(s)
         setSeason(yr)
-        setHrLeaders(hr)
-        setAvgLeaders(avg)
+        setLeaders({
+          all: { hr: allHr, avg: allAvg },
+          al: { hr: alHr, avg: alAvg },
+          nl: { hr: nlHr, avg: nlAvg },
+        })
       } catch (e) {
         if (!cancelled) setError(e.message || '読み込みに失敗しました')
       } finally {
@@ -109,7 +121,13 @@ function App() {
         {loading && <div className="loading">読み込み中...</div>}
         {error && <div className="error">エラー: {error}</div>}
         {!loading && !error && tab === 'hitting' && (
-          <HittingView stats={stats?.hitting} leaders={{ hr: hrLeaders, avg: avgLeaders }} season={season} />
+          <HittingView
+            stats={stats?.hitting}
+            leaders={leaders}
+            leagueFilter={leagueFilter}
+            setLeagueFilter={setLeagueFilter}
+            season={season}
+          />
         )}
         {!loading && !error && tab === 'pitching' && (
           <PitchingView stats={stats?.pitching} season={season} />
@@ -121,8 +139,10 @@ function App() {
   )
 }
 
-function HittingView({ stats, leaders, season }) {
+function HittingView({ stats, leaders, leagueFilter, setLeagueFilter, season }) {
   if (!stats) return <div className="empty">この期間の打撃成績はありません</div>
+  const current = leaders[leagueFilter] || { hr: [], avg: [] }
+  const leagueLabel = leagueFilter === 'all' ? 'MLB総合' : leagueFilter === 'al' ? 'ア・リーグ' : 'ナ・リーグ'
   return (
     <>
       <div className="headline-stat">
@@ -145,16 +165,27 @@ function HittingView({ stats, leaders, season }) {
         <Stat v={stats.baseOnBalls} k="四球 BB" />
       </div>
 
-      {leaders.hr.length > 0 && (
+      {(current.hr.length > 0 || current.avg.length > 0) && (
         <>
-          <h2 className="section-title">{season} MLB 本塁打ランキング</h2>
-          <LeaderList leaders={leaders.hr} />
+          <h2 className="section-title">{season} ランキング</h2>
+          <div className="subtabs">
+            <button className={`subtab ${leagueFilter === 'all' ? 'active' : ''}`} onClick={() => setLeagueFilter('all')}>総合</button>
+            <button className={`subtab ${leagueFilter === 'al' ? 'active' : ''}`} onClick={() => setLeagueFilter('al')}>ア・リーグ</button>
+            <button className={`subtab ${leagueFilter === 'nl' ? 'active' : ''}`} onClick={() => setLeagueFilter('nl')}>ナ・リーグ</button>
+          </div>
         </>
       )}
-      {leaders.avg.length > 0 && (
+
+      {current.hr.length > 0 && (
         <>
-          <h2 className="section-title">{season} MLB 打率ランキング</h2>
-          <LeaderList leaders={leaders.avg} />
+          <h3 className="rank-title">本塁打 <span className="rank-scope">{leagueLabel}</span></h3>
+          <LeaderList leaders={current.hr} />
+        </>
+      )}
+      {current.avg.length > 0 && (
+        <>
+          <h3 className="rank-title">打率 <span className="rank-scope">{leagueLabel}</span></h3>
+          <LeaderList leaders={current.avg} />
         </>
       )}
     </>
