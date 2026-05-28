@@ -1,4 +1,36 @@
-.page { min-height: 100vh; background: var(--white); }
+.page { min-height: 100vh; background: var(--white); overflow-x: hidden; }
+
+/* 引っ張って更新 */
+.ptr {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 10px;
+  background: var(--navy-deep);
+  color: var(--white);
+  z-index: 5;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ptr-spinner {
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.ptr-spinner.spin {
+  animation: ptrspin 0.8s linear infinite;
+}
+
+@keyframes ptrspin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
 
 .hero {
   background: linear-gradient(180deg, var(--navy-deep) 0%, var(--navy) 100%);

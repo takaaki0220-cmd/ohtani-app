@@ -90,7 +90,93 @@ function getRanks(leaders, group, apiKey) {
   }
 }
 
+async function refreshApp() {
+  try {
+    if ('serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.getRegistration()
+      if (reg) await reg.update() // 新しいバージョンがあれば取得
+    }
+  } catch {
+    // 失敗してもリロードは続行
+  }
+  window.location.reload()
+}
+
+// 自前の引っ張って更新（iOS standalone PWA は標準機能が無いため）
+function usePullToRefresh() {
+  const [pull, setPull] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+  const startY = useRef(0)
+  const pullRef = useRef(0)
+  const active = useRef(false)
+
+  useEffect(() => {
+    const THRESHOLD = 70
+    const MAX = 120
+    const RESIST = 0.5
+
+    function onStart(e) {
+      // ドロワーが開いている時やページ最上部でない時は無効
+      if (window.scrollY > 0 || document.querySelector('.detail-side.active')) {
+        active.current = false
+        return
+      }
+      active.current = true
+      startY.current = e.touches[0].clientY
+      pullRef.current = 0
+    }
+    function onMove(e) {
+      if (!active.current || refreshing) return
+      const dy = e.touches[0].clientY - startY.current
+      if (dy > 0 && window.scrollY <= 0) {
+        const dist = Math.min(MAX, dy * RESIST)
+        pullRef.current = dist
+        setPull(dist)
+      } else {
+        pullRef.current = 0
+        setPull(0)
+        active.current = false
+      }
+    }
+    function onEnd() {
+      if (!active.current) return
+      active.current = false
+      if (pullRef.current >= THRESHOLD) {
+        setRefreshing(true)
+        setPull(56)
+        refreshApp()
+      } else {
+        setPull(0)
+      }
+    }
+
+    window.addEventListener('touchstart', onStart, { passive: true })
+    window.addEventListener('touchmove', onMove, { passive: true })
+    window.addEventListener('touchend', onEnd, { passive: true })
+    return () => {
+      window.removeEventListener('touchstart', onStart)
+      window.removeEventListener('touchmove', onMove)
+      window.removeEventListener('touchend', onEnd)
+    }
+  }, [refreshing])
+
+  return { pull, refreshing }
+}
+
+function PullIndicator({ pull, refreshing }) {
+  if (pull <= 0 && !refreshing) return null
+  const ready = pull >= 70 || refreshing
+  return (
+    <div className="ptr" style={{ height: `${pull}px`, opacity: Math.min(1, pull / 50) }}>
+      <div className={`ptr-spinner ${refreshing ? 'spin' : ''}`}>
+        {refreshing ? '↻' : ready ? '↑' : '↓'}
+      </div>
+    </div>
+  )
+}
+
 function App() {
+  const { pull, refreshing } = usePullToRefresh()
   const [season, setSeason] = useState(getInitialSeason())
   const [stats, setStats] = useState(null)
   const [player, setPlayer] = useState(null)
@@ -156,6 +242,11 @@ function App() {
 
   return (
     <div className="page">
+      <PullIndicator pull={pull} refreshing={refreshing} />
+      <div
+        className="page-shift"
+        style={{ transform: pull > 0 ? `translateY(${pull}px)` : undefined, transition: pull > 0 && !refreshing ? 'none' : 'transform 0.2s ease-out' }}
+      >
       <header className="hero">
         <div className="hero-inner">
           <div className="eyebrow">Los Angeles Dodgers · #17</div>
@@ -209,6 +300,7 @@ function App() {
       </main>
 
       <div className="footer">Data: MLB Stats API · statsapi.mlb.com</div>
+      </div>
     </div>
   )
 }
