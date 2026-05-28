@@ -317,6 +317,189 @@ html.pwa-standalone .hero {
   font-weight: 500;
 }
 
+/* 二刀流 総合WAR ストリップ */
+.twoway {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+
+.twoway-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.twoway-v {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--white);
+}
+
+.twoway-item.total .twoway-v {
+  font-size: 32px;
+}
+
+.twoway-k {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+  margin-top: 5px;
+}
+
+.twoway-plus, .twoway-eq {
+  font-size: 18px;
+  opacity: 0.55;
+  font-weight: 300;
+}
+
+/* 指標グループ */
+.metric-group + .metric-group {
+  margin-top: 28px;
+}
+
+.metric-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin: 0 0 12px 4px;
+}
+
+/* 重要指標バッジ */
+.key-badge {
+  position: absolute;
+  top: 10px;
+  left: 14px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--navy);
+  background: rgba(0, 90, 156, 0.1);
+  padding: 3px 7px;
+  border-radius: 999px;
+}
+
+.stat.key {
+  background: var(--soft);
+}
+
+.stat.key.active { background: var(--navy); }
+.stat.active .key-badge { color: var(--white); background: rgba(255,255,255,0.2); }
+
+.stat.key .v { padding-top: 14px; }
+
+/* ⓘ 説明ボタン */
+.info-btn {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 15px;
+  color: var(--muted);
+  opacity: 0.6;
+  line-height: 1;
+  padding: 4px;
+  z-index: 2;
+}
+.info-btn:hover { opacity: 1; }
+.stat.active .info-btn { color: rgba(255,255,255,0.85); }
+
+.headline-info {
+  position: static;
+  margin-left: 4px;
+  align-self: flex-start;
+}
+
+.headline-body { display: flex; flex-direction: column; }
+
+.headline-pace {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 6px;
+  letter-spacing: 0.04em;
+}
+
+.stat-pace {
+  font-size: 10px;
+  color: var(--muted);
+  margin-top: 4px;
+  letter-spacing: 0.04em;
+}
+
+/* 説明モーダル */
+.info-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.info-modal {
+  background: var(--white);
+  border-radius: 16px;
+  max-width: 380px;
+  width: 100%;
+  padding: 22px 22px 24px;
+  animation: panelIn 0.18s ease-out;
+}
+
+.info-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.info-modal-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.info-modal-desc {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink);
+  margin: 0;
+  opacity: 0.85;
+}
+
+/* ランキングパネルのサマリー（順位・上位%） */
+.rank-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 2px 0 14px;
+  padding: 12px 14px;
+  background: var(--white);
+  border-radius: 10px;
+}
+
+.rank-summary-pos {
+  font-size: 14px;
+  color: var(--muted);
+}
+.rank-summary-pos strong {
+  font-size: 18px;
+  color: var(--navy);
+  font-weight: 800;
+}
+
+.rank-summary-pct {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .qual-card {
   background: var(--soft);
   border-radius: 14px;
