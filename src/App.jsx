@@ -66,6 +66,42 @@ async function fetchPlayerInfo() {
   return data.people?.[0]
 }
 
+// ドジャース(119)のチーム試合数を取得（規定投球回の計算用）
+async function fetchTeamGamesPlayed(season) {
+  try {
+    const res = await fetch(`${API_BASE}/standings?leagueId=103,104&season=${season}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    for (const rec of data.records || []) {
+      for (const t of rec.teamRecords || []) {
+        if (t.team?.id === 119) {
+          return t.gamesPlayed ?? ((t.wins || 0) + (t.losses || 0))
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null
+}
+
+// "55.1" 形式の投球回を実数に（.1=1/3, .2=2/3イニング）
+function ipToNumber(ip) {
+  if (ip == null) return 0
+  const [whole, frac] = String(ip).split('.')
+  const w = parseInt(whole, 10) || 0
+  const f = frac === '1' ? 1 / 3 : frac === '2' ? 2 / 3 : 0
+  return w + f
+}
+
+// 実数の投球回を "55.1" 形式に戻す
+function numberToIp(n) {
+  const whole = Math.floor(n + 1e-9)
+  const outs = Math.round((n - whole) * 3)
+  if (outs >= 3) return `${whole + 1}.0`
+  return `${whole}.${outs}`
+}
+
 async function fetchLeaders(category, season, leagueId, group) {
   const leaguePart = leagueId ? `&leagueId=${leagueId}` : ''
   // limit を大きめに取って、大谷の順位を取れるようにする（表示する一覧は別途上位のみに絞る）
@@ -181,6 +217,7 @@ function App() {
   const [stats, setStats] = useState(null)
   const [player, setPlayer] = useState(null)
   const [leaders, setLeaders] = useState(null)
+  const [teamGames, setTeamGames] = useState(null)
   const [leagueFilter, setLeagueFilter] = useState('all')
   const [tab, setTab] = useState('hitting')
   const [selected, setSelected] = useState({ hitting: null, pitching: null })
@@ -221,11 +258,14 @@ function App() {
         const built = { all: { hitting: {}, pitching: {} }, al: { hitting: {}, pitching: {} }, nl: { hitting: {}, pitching: {} } }
         requests.forEach((r, i) => { built[r.league][r.group][r.cat] = results[i] })
 
+        const tg = await fetchTeamGamesPlayed(yr)
+
         if (cancelled) return
         setPlayer(info)
         setStats(s)
         setSeason(yr)
         setLeaders(built)
+        setTeamGames(tg)
       } catch (e) {
         if (!cancelled) setError(e.message || '読み込みに失敗しました')
       } finally {
@@ -295,6 +335,7 @@ function App() {
             setLeagueFilter={setLeagueFilter}
             selected={selected.pitching}
             onSelect={(k) => toggleSelect('pitching', k)}
+            teamGames={teamGames}
           />
         )}
       </main>
@@ -344,7 +385,7 @@ function buildPitchingItems(s, leaders) {
   ]
 }
 
-function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, setLeagueFilter, selected, onSelect }) {
+function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, setLeagueFilter, selected, onSelect, teamGames }) {
   if (!stats) return <div className="empty">この期間の{group === 'hitting' ? '打撃' : '投手'}成績はありません</div>
   const headline = items.find((it) => it.headline)
   const rest = items.filter((it) => !it.headline)
@@ -471,6 +512,9 @@ function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, 
             onSelect={onSelect}
           />
         )}
+        {group === 'pitching' && teamGames > 0 && (
+          <QualifierCard ip={stats.inningsPitched} teamGames={teamGames} />
+        )}
         <div className="stat-grid">
           {rest.map((it) => (
             <StatCard
@@ -508,6 +552,35 @@ function StatsView({ group, stats, items, headlineLabel, leaders, leagueFilter, 
           />
         </div>
       </aside>
+    </div>
+  )
+}
+
+// 規定投球回（チーム試合数 × 1.0イニング）の到達状況
+function QualifierCard({ ip, teamGames }) {
+  const current = ipToNumber(ip)
+  const qualifier = teamGames // 1試合につき1.0イニング
+  const reached = current >= qualifier
+  const remaining = Math.max(0, qualifier - current)
+  const pct = Math.min(100, qualifier > 0 ? (current / qualifier) * 100 : 0)
+  return (
+    <div className="qual-card">
+      <div className="qual-head">
+        <span className="qual-title">規定投球回</span>
+        {reached ? (
+          <span className="qual-badge reached">到達 ✓</span>
+        ) : (
+          <span className="qual-badge">あと {numberToIp(remaining)} イニング</span>
+        )}
+      </div>
+      <div className="qual-bar">
+        <div className="qual-bar-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="qual-meta">
+        <span>現在 <strong>{numberToIp(current)}</strong></span>
+        <span>規定 <strong>{qualifier.toFixed(1)}</strong></span>
+      </div>
+      <div className="qual-note">規定 = チーム試合数 {teamGames} × 1.0 イニング（防御率などのタイトル資格）</div>
     </div>
   )
 }

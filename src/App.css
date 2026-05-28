@@ -317,6 +317,75 @@ html.pwa-standalone .hero {
   font-weight: 500;
 }
 
+.qual-card {
+  background: var(--soft);
+  border-radius: 14px;
+  padding: 18px 20px 16px;
+  margin-bottom: 28px;
+}
+
+.qual-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.qual-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.qual-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+  background: var(--white);
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+
+.qual-badge.reached {
+  color: var(--white);
+  background: var(--navy);
+}
+
+.qual-bar {
+  height: 8px;
+  background: var(--soft-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.qual-bar-fill {
+  height: 100%;
+  background: var(--navy);
+  border-radius: 999px;
+  transition: width 0.4s ease-out;
+}
+
+.qual-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.qual-meta strong {
+  color: var(--ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.qual-note {
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .stat-rank {
   margin-left: auto;
   text-align: right;
