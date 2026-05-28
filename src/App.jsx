@@ -346,6 +346,9 @@ function App() {
               <div className="twoway-item total">
                 <span className="twoway-v">{f1((saber.hitting?.war || 0) + (saber.pitching?.war || 0))}</span>
                 <span className="twoway-k">二刀流 総合WAR</span>
+                {teamGames > 0 && (
+                  <span className="twoway-pace">162試合ペース {f1(((saber.hitting?.war || 0) + (saber.pitching?.war || 0)) / teamGames * 162)} WAR</span>
+                )}
               </div>
             </div>
           )}
@@ -404,28 +407,28 @@ function buildHittingData(s, saber, leaders, teamGames) {
   return {
     headline: { api: 'homeRuns', label: '本塁打', sub: 'HR', v: s.homeRuns, ranks: r('homeRuns'), pace: true, desc: '本塁打数。長打力の象徴。' },
     groups: [
-      { title: 'Production / 総合', items: [
-        { api: 'onBasePlusSlugging', label: 'OPS', sub: '', v: s.ops, ranks: r('onBasePlusSlugging'), key: true, desc: '出塁率＋長打率。打者の総合打撃力を表す代表指標。' },
-        { label: 'wRC+', sub: '', v: fInt(saber?.wRcPlus), key: true, desc: 'リーグ平均(100)と球場補正を加味した得点創出力。150なら平均より50%優秀。MLBで最重要級の打撃指標。' },
+      { title: 'Production', items: [
+        { api: 'onBasePlusSlugging', label: 'OPS', sub: '', v: s.ops, ranks: r('onBasePlusSlugging'), feature: true, desc: '出塁率＋長打率。打者の総合打撃力を表す代表指標。' },
+        { label: 'wRC+', sub: '', v: fInt(saber?.wRcPlus), feature: true, desc: 'リーグ平均(100)と球場補正を加味した得点創出力。150なら平均より50%優秀。MLBで最重要級の打撃指標。' },
         { label: 'WAR', sub: '', v: f1(saber?.war), desc: '控え選手と比べ何勝分チームに上乗せしたかを示す総合指標。打撃・走塁・守備を統合。' },
         { label: 'wOBA', sub: '', v: saber?.woba != null ? Number(saber.woba).toFixed(3).replace(/^0/, '') : '—', desc: '出塁の「質」を加重平均した出塁率系の発展指標。' },
       ]},
-      { title: 'Power / 長打', items: [
+      { title: 'Power', items: [
         { api: 'sluggingPercentage', label: '長打率', sub: 'SLG', v: s.slg, ranks: r('sluggingPercentage'), desc: '1打数あたりの塁打数。長打力を示す。' },
-        { api: 'doubles', label: '二塁打', sub: '2B', v: s.doubles, ranks: r('doubles'), pace: true, desc: '二塁打の数。' },
+        { api: 'doubles', label: '二塁打', sub: '2B', v: s.doubles, ranks: r('doubles'), desc: '二塁打の数。' },
       ]},
-      { title: 'On Base / 出塁', items: [
+      { title: 'On Base', items: [
         { api: 'onBasePercentage', label: '出塁率', sub: 'OBP', v: s.obp, ranks: r('onBasePercentage'), desc: '出塁能力を示す指標。現代MLBで非常に重視される。' },
-        { api: 'walks', label: '四球', sub: 'BB', v: s.baseOnBalls, ranks: r('walks'), pace: true, desc: '四球数。選球眼の指標。' },
+        { api: 'walks', label: '四球', sub: 'BB', v: s.baseOnBalls, ranks: r('walks'), desc: '四球数。選球眼の指標。' },
       ]},
-      { title: 'Contact / 安打', items: [
+      { title: 'Contact', items: [
         { api: 'battingAverage', label: '打率', sub: 'AVG', v: s.avg, ranks: r('battingAverage'), desc: '安打 ÷ 打数。伝統的な打撃指標。' },
-        { api: 'hits', label: '安打', sub: 'H', v: s.hits, ranks: r('hits'), pace: true, desc: '安打数。' },
+        { api: 'hits', label: '安打', sub: 'H', v: s.hits, ranks: r('hits'), desc: '安打数。' },
       ]},
-      { title: 'Speed & Runs / 走力・得点', items: [
-        { api: 'stolenBases', label: '盗塁', sub: 'SB', v: s.stolenBases, ranks: r('stolenBases'), pace: true, desc: '盗塁成功数。走力の指標。' },
-        { api: 'runs', label: '得点', sub: 'R', v: s.runs, ranks: r('runs'), pace: true, desc: '生還した回数。打順・チームに依存。' },
-        { api: 'runsBattedIn', label: '打点', sub: 'RBI', v: s.rbi, ranks: r('runsBattedIn'), pace: true, desc: '自分の打撃で生還させた走者数。前後の打者に依存するため個人能力評価には向かない。' },
+      { title: 'Speed & Runs', items: [
+        { api: 'stolenBases', label: '盗塁', sub: 'SB', v: s.stolenBases, ranks: r('stolenBases'), desc: '盗塁成功数。走力の指標。' },
+        { api: 'runs', label: '得点', sub: 'R', v: s.runs, ranks: r('runs'), desc: '生還した回数。打順・チームに依存。' },
+        { api: 'runsBattedIn', label: '打点', sub: 'RBI', v: s.rbi, ranks: r('runsBattedIn'), desc: '自分の打撃で生還させた走者数。前後の打者に依存するため個人能力評価には向かない。' },
       ]},
     ],
     teamGames,
@@ -438,20 +441,20 @@ function buildPitchingData(s, saber, leaders, teamGames) {
   return {
     headline: { api: 'strikeouts', label: '奪三振', sub: 'K', v: s.strikeOuts, ranks: r('strikeouts'), pace: true, desc: '奪三振数。' },
     groups: [
-      { title: 'Run Prevention / 失点抑止', items: [
-        { api: 'earnedRunAverage', label: '防御率', sub: 'ERA', v: s.era, ranks: r('earnedRunAverage'), key: true, desc: '9イニングあたりの自責点。低いほど良い。' },
-        { label: 'FIP', sub: '', v: f2(saber?.fip), desc: '被本塁打・四球・三振だけで評価する指標。守備の影響を除いた投手の実力値。低いほど良い。' },
+      { title: 'Run Prevention', items: [
+        { api: 'earnedRunAverage', label: '防御率', sub: 'ERA', v: s.era, ranks: r('earnedRunAverage'), feature: true, desc: '9イニングあたりの自責点。低いほど良い。' },
+        { label: 'FIP', sub: '', v: f2(saber?.fip), feature: true, desc: '被本塁打・四球・三振だけで評価する指標。守備の影響を除いた投手の実力値。低いほど良い。' },
         { label: 'xFIP', sub: '', v: f2(saber?.xfip), desc: 'FIPの被本塁打を平均化した予測指標。運の影響をさらに除く。' },
         { label: 'ERA-', sub: '', v: fInt(saber?.eraMinus), desc: 'リーグ平均を100とした防御率。100未満が平均より優秀（低いほど良い）。' },
       ]},
-      { title: 'Value / 価値', items: [
+      { title: 'Value', items: [
         { label: 'WAR', sub: '', v: f1(saber?.war), desc: '投球による勝利貢献度の総合指標。控え投手と比べ何勝分上乗せしたか。' },
       ]},
-      { title: 'Rate / 率', items: [
+      { title: 'Rate', items: [
         { api: 'walksAndHitsPerInningPitched', label: 'WHIP', sub: '', v: s.whip, ranks: r('walksAndHitsPerInningPitched'), desc: '1イニングあたりの被安打＋与四球。低いほど良い。' },
         { api: 'strikeoutsPer9Inn', label: 'K/9', sub: '', v: s.strikeoutsPer9Inn ?? s.strikeoutsPer9, ranks: r('strikeoutsPer9Inn'), desc: '9イニングあたりの奪三振数。' },
       ]},
-      { title: 'Counting / 累計', items: [
+      { title: 'Counting', items: [
         { api: 'wins', label: '勝利', sub: 'W', v: s.wins, ranks: r('wins'), desc: '勝利数。' },
         { api: 'losses', label: '敗戦', sub: 'L', v: s.losses, ranks: r('losses'), desc: '敗戦数。' },
         { api: 'inningsPitched', label: '投球回', sub: 'IP', v: s.inningsPitched, ranks: r('inningsPitched'), desc: '投球したイニング数。' },
@@ -464,7 +467,6 @@ function buildPitchingData(s, saber, leaders, teamGames) {
 }
 
 function StatsView({ group, stats, data, headlineLabel, leaders, leagueFilter, setLeagueFilter, selected, onSelect, teamGames }) {
-  const [info, setInfo] = useState(null)
   const drawerRef = useRef(null)
   const backdropRef = useRef(null)
   const touchStartXRef = useRef(0)
@@ -481,12 +483,13 @@ function StatsView({ group, stats, data, headlineLabel, leaders, leagueFilter, s
   if (!stats || !data) return <div className="empty">この期間の{group === 'hitting' ? '打撃' : '投手'}成績はありません</div>
   const headline = data.headline
   const groups = data.groups
+  const idOf = (it) => it.api || it.label
   const allItems = [headline, ...groups.flatMap((g) => g.items)]
 
   // 閉じるアニメーション中も内容を保持するために displaySelected を使う
   const displaySelected = selected || (closing ? lastSelectedRef.current : null)
   const showDrawer = displaySelected != null
-  const selectedItem = allItems.find((it) => it.api && it.api === displaySelected)
+  const selectedItem = allItems.find((it) => idOf(it) === displaySelected)
 
   function resetStyles() {
     if (drawerRef.current) {
@@ -586,11 +589,10 @@ function StatsView({ group, stats, data, headlineLabel, leaders, leagueFilter, s
           <HeadlineStat
             v={headline.v}
             label={headlineLabel}
-            apiKey={headline.api}
+            apiKey={idOf(headline)}
             selected={selected}
             onSelect={onSelect}
             pace={headline.pace ? paceOf(headline.v, teamGames) : null}
-            onInfo={headline.desc ? () => setInfo(headline) : undefined}
           />
         )}
         {group === 'pitching' && teamGames > 0 && (
@@ -606,20 +608,16 @@ function StatsView({ group, stats, data, headlineLabel, leaders, leagueFilter, s
                   v={it.v}
                   label={it.label}
                   sub={it.sub}
-                  isKey={it.key}
-                  clickable={!!it.api}
-                  isSelected={it.api === selected}
-                  onClick={it.api ? () => onSelect(it.api) : undefined}
-                  onInfo={it.desc ? () => setInfo(it) : undefined}
+                  feature={it.feature}
+                  isSelected={idOf(it) === selected}
+                  onClick={() => onSelect(idOf(it))}
                   ranks={it.ranks}
-                  pace={it.pace ? paceOf(it.v, teamGames) : null}
                 />
               ))}
             </div>
           </div>
         ))}
       </div>
-      {info && <InfoModal item={info} onClose={() => setInfo(null)} />}
       {showDrawer && (
         <div className="rank-backdrop" ref={backdropRef} onClick={animateClose} aria-hidden />
       )}
@@ -675,66 +673,36 @@ function QualifierCard({ ip, teamGames }) {
   )
 }
 
-function HeadlineStat({ v, label, apiKey, selected, onSelect, pace, onInfo }) {
+function HeadlineStat({ v, label, apiKey, selected, onSelect, pace }) {
   const active = selected === apiKey
   return (
-    <div className={`headline-stat clickable ${active ? 'active' : ''}`} onClick={() => onSelect(apiKey)} role="button">
+    <div className={`headline-stat ${active ? 'active' : ''}`} onClick={() => onSelect(apiKey)} role="button">
       <div className="num">{v ?? '—'}</div>
       <div className="headline-body">
         <div className="label">{label}</div>
         {pace != null && <div className="headline-pace">162試合換算 {pace}</div>}
       </div>
-      {onInfo && (
-        <button className="info-btn headline-info" onClick={(e) => { e.stopPropagation(); onInfo() }} aria-label="指標の説明">ⓘ</button>
-      )}
-      <span className="reveal-hint">{active ? '選択中' : 'タップでランキング'}</span>
     </div>
   )
 }
 
-function StatCard({ v, label, sub, isKey, clickable, isSelected, onClick, onInfo, ranks, pace }) {
+function StatCard({ v, label, sub, feature, isSelected, onClick, ranks }) {
+  // 順位は3階層目として控えめに。NLを主、総合を従に1行で。
+  const rankText = ranks
+    ? [ranks.nl ? `NL ${ranks.nl}位` : null, ranks.all ? `全${ranks.all}位` : null].filter(Boolean).join(' · ')
+    : null
   return (
     <div
-      className={`stat ${clickable ? 'clickable' : ''} ${isSelected ? 'active' : ''} ${isKey ? 'key' : ''}`}
+      className={`stat ${isSelected ? 'active' : ''} ${feature ? 'feature' : ''}`}
       onClick={onClick}
-      role={clickable ? 'button' : undefined}
+      role="button"
     >
-      {isKey && <span className="key-badge">重要指標</span>}
-      {onInfo && (
-        <button className="info-btn" onClick={(e) => { e.stopPropagation(); onInfo() }} aria-label="指標の説明">ⓘ</button>
-      )}
       <div className="v">{v ?? '—'}</div>
       <div className="k">
         {label}
         {sub && <span className="k-sub"> {sub}</span>}
       </div>
-      {pace != null && <div className="stat-pace">162換算 {pace}</div>}
-      {ranks && (
-        <div className="stat-rank">
-          <div className="stat-rank-line">
-            <span className="stat-rank-scope">総合</span>
-            <span className="stat-rank-val">{ranks.all ? `${ranks.all}位` : '圏外'}</span>
-          </div>
-          <div className="stat-rank-line">
-            <span className="stat-rank-scope">ナ・リーグ</span>
-            <span className="stat-rank-val">{ranks.nl ? `${ranks.nl}位` : '圏外'}</span>
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
-
-function InfoModal({ item, onClose }) {
-  return (
-    <div className="info-overlay" onClick={onClose}>
-      <div className="info-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="info-modal-head">
-          <span className="info-modal-title">{item.label}{item.sub ? ` (${item.sub})` : ''}</span>
-          <button className="rank-close" onClick={onClose} aria-label="閉じる">×</button>
-        </div>
-        <p className="info-modal-desc">{item.desc}</p>
-      </div>
+      {rankText && <div className="stat-rank">{rankText}</div>}
     </div>
   )
 }
@@ -751,34 +719,41 @@ function RankingPanel({ selected, selectedItem, group, leaders, leagueFilter, se
       </div>
     )
   }
-  const data = leaders?.[leagueFilter]?.[group]?.[selected] || []
+  const apiKey = selectedItem.api
+  const data = apiKey ? (leaders?.[leagueFilter]?.[group]?.[apiKey] || []) : []
+  const hasRanking = !!apiKey && data.length > 0
   const ohtani = data.find((l) => String(l.person?.id) === String(PLAYER_ID))
   const topPct = ohtani && data.length > 1 ? Math.max(1, Math.round((ohtani.rank / data.length) * 100)) : null
   const leagueLabel = LEAGUES.find((l) => l.key === leagueFilter)?.label || ''
   return (
     <div className="rank-panel">
       <div className="rank-panel-head">
-        <h3 className="rank-panel-title">{selectedItem.label} ランキング</h3>
+        <h3 className="rank-panel-title">{selectedItem.label}{selectedItem.sub ? ` (${selectedItem.sub})` : ''}</h3>
         <button className="rank-close" onClick={onClose} aria-label="閉じる">×</button>
       </div>
-      <div className="subtabs">
-        {LEAGUES.map((l) => (
-          <button
-            key={l.key}
-            className={`subtab ${leagueFilter === l.key ? 'active' : ''}`}
-            onClick={() => setLeagueFilter(l.key)}
-          >
-            {l.label}
-          </button>
-        ))}
-      </div>
-      {ohtani && (
-        <div className="rank-summary">
-          <span className="rank-summary-pos">{leagueLabel} <strong>{ohtani.rank}位</strong></span>
-          {topPct != null && <span className="rank-summary-pct">上位 {topPct}%（{data.length}人中）</span>}
-        </div>
+      {selectedItem.desc && <p className="rank-desc">{selectedItem.desc}</p>}
+      {hasRanking && (
+        <>
+          <div className="subtabs">
+            {LEAGUES.map((l) => (
+              <button
+                key={l.key}
+                className={`subtab ${leagueFilter === l.key ? 'active' : ''}`}
+                onClick={() => setLeagueFilter(l.key)}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
+          {ohtani && (
+            <div className="rank-summary">
+              <span className="rank-summary-pos">{leagueLabel} <strong>{ohtani.rank}位</strong></span>
+              {topPct != null && <span className="rank-summary-pct">上位 {topPct}%（{data.length}人中）</span>}
+            </div>
+          )}
+          <LeaderList leaders={data} />
+        </>
       )}
-      {data.length > 0 ? <LeaderList leaders={data} /> : <div className="empty">このランキングはデータがありません</div>}
     </div>
   )
 }
