@@ -718,45 +718,56 @@ function StatsView({ group, stats, data, headlineLabel, leaders, leagueFilter, s
   )
 }
 
+// 同じ相手・同じ本拠地区分の連戦をまとめる
+function groupSeries(games) {
+  const out = []
+  for (const g of games) {
+    const last = out[out.length - 1]
+    if (last && last.oppId === g.oppId && last.isHome === g.isHome) last.games.push(g)
+    else out.push({ oppId: g.oppId, oppName: g.oppName, isHome: g.isHome, games: [g] })
+  }
+  return out
+}
+
 function ScheduleView({ games }) {
   if (!games) return <div className="loading">読み込み中...</div>
   if (games.length === 0) return <div className="empty">日程が取得できませんでした</div>
 
   const todayYmd = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
-  const upcoming = games.filter((g) => g.state !== 'Final')
-  const recent = games.filter((g) => g.state === 'Final').reverse() // 新しい順
+  const upcoming = groupSeries(games.filter((g) => g.state !== 'Final'))
+  const recent = groupSeries(games.filter((g) => g.state === 'Final')).reverse()
 
-  const renderRow = (g) => {
+  const renderGameRow = (g) => {
     const t = toJst(g.dateUTC)
     const isToday = t.ymd === todayYmd
     const live = g.state === 'Live'
     const final = g.state === 'Final'
-    let result = null
+    let right
     if (final && g.dodgersScore != null && g.oppScore != null) {
       const win = g.dodgersScore > g.oppScore
-      result = (
-        <span className={`sch-result ${win ? 'win' : 'lose'}`}>
-          {win ? '○' : '●'} {g.dodgersScore}-{g.oppScore}
-        </span>
-      )
+      right = <span className={`game-result ${win ? 'win' : 'lose'}`}>{win ? '○' : '●'} {g.dodgersScore}-{g.oppScore}</span>
+    } else {
+      right = <span className={`game-time ${live ? 'live' : ''}`}>{live ? 'LIVE' : t.time}</span>
     }
     return (
-      <div key={g.pk} className={`sch-row ${isToday ? 'today' : ''}`}>
-        <div className="sch-date">
-          <span className="sch-md">{t.md}</span>
-          <span className="sch-wd">({t.wd})</span>
-        </div>
-        <div className="sch-match">
-          <span className="sch-vs">{g.isHome ? 'vs' : '@'}</span>
-          <span className="sch-opp">{g.oppName}</span>
-          {g.isHome && <span className="sch-home">ホーム</span>}
-        </div>
-        <div className="sch-right">
-          {final ? result : <span className={`sch-time ${live ? 'live' : ''}`}>{live ? 'LIVE' : t.time}</span>}
-        </div>
+      <div key={g.pk} className={`game-row ${isToday ? 'today' : ''}`}>
+        <span className="game-date">{t.md}<span className="game-wd">（{t.wd}）</span></span>
+        {isToday && <span className="game-today-tag">今日</span>}
+        <span className="game-right">{right}</span>
       </div>
     )
   }
+
+  const renderSeries = (s, i) => (
+    <div className="series" key={i}>
+      <div className="series-head">
+        <span className="series-opp">{s.oppName}</span>
+        <span className={`series-where ${s.isHome ? 'home' : 'away'}`}>{s.isHome ? 'ホーム' : 'ビジター'}</span>
+        {s.games.length > 1 && <span className="series-count">{s.games.length}連戦</span>}
+      </div>
+      <div className="series-games">{s.games.map(renderGameRow)}</div>
+    </div>
+  )
 
   return (
     <div className="schedule">
@@ -764,13 +775,13 @@ function ScheduleView({ games }) {
       {upcoming.length > 0 && (
         <section className="sch-section">
           <h3 className="metric-group-title">今後の予定</h3>
-          {upcoming.map(renderRow)}
+          {upcoming.map(renderSeries)}
         </section>
       )}
       {recent.length > 0 && (
         <section className="sch-section">
           <h3 className="metric-group-title">最近の結果</h3>
-          {recent.map(renderRow)}
+          {recent.map(renderSeries)}
         </section>
       )}
     </div>

@@ -384,98 +384,99 @@ html.pwa-standalone .hero {
   margin-bottom: 16px;
 }
 
-.sch-section + .sch-section { margin-top: 32px; }
+.sch-section + .sch-section { margin-top: 36px; }
 
-.sch-row {
+/* シリーズ（連戦）ブロック */
+.series + .series { margin-top: 22px; }
+
+.series-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.series-opp {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.series-where {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.series-where.home { color: var(--navy); background: rgba(0, 90, 156, 0.1); }
+.series-where.away { color: var(--muted); background: var(--soft); }
+
+.series-count {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: auto;
+}
+
+.series-games { display: flex; flex-direction: column; }
+
+.game-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 14px 8px;
+  gap: 10px;
+  padding: 11px 6px;
   box-shadow: inset 0 -1px 0 var(--soft-2);
 }
 
-.sch-row.today {
+.game-row.today {
   background: var(--soft);
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: none;
 }
 
-.sch-date {
-  display: flex;
-  flex-direction: column;
-  min-width: 56px;
-  flex-shrink: 0;
-}
-
-.sch-md {
-  font-size: 18px;
-  font-weight: 700;
+.game-date {
+  font-size: 15px;
+  font-weight: 600;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
 }
 
-.sch-wd {
-  font-size: 11px;
-  color: var(--muted);
-}
-
-.sch-match {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-
-.sch-vs {
+.game-wd {
   font-size: 12px;
   color: var(--muted);
-  font-weight: 600;
-  flex-shrink: 0;
+  font-weight: 400;
 }
 
-.sch-opp {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.sch-home {
+.game-today-tag {
   font-size: 10px;
-  color: var(--navy);
-  background: rgba(0, 90, 156, 0.1);
+  font-weight: 700;
+  color: var(--white);
+  background: var(--navy);
   padding: 2px 7px;
   border-radius: 999px;
-  flex-shrink: 0;
 }
 
-.sch-right {
-  margin-left: auto;
-  flex-shrink: 0;
-  text-align: right;
-}
+.game-right { margin-left: auto; }
 
-.sch-time {
+.game-time {
   font-size: 16px;
   font-weight: 700;
   color: var(--navy);
   font-variant-numeric: tabular-nums;
 }
-
-.sch-time.live {
+.game-time.live {
   color: #c0392b;
   font-size: 13px;
   letter-spacing: 0.06em;
 }
 
-.sch-result {
+.game-result {
   font-size: 16px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-.sch-result.win { color: var(--navy); }
-.sch-result.lose { color: var(--muted); }
+.game-result.win { color: var(--navy); }
+.game-result.lose { color: var(--muted); }
 
 /* タップパネル内の指標説明 */
 .rank-desc {
