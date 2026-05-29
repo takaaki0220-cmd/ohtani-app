@@ -102,6 +102,73 @@ function numberToIp(n) {
   return `${whole}.${outs}`
 }
 
+// MLB全30球団の日本語短縮名
+const TEAM_JP = {
+  108: 'エンゼルス', 109: 'Dバックス', 110: 'オリオールズ', 111: 'レッドソックス',
+  112: 'カブス', 113: 'レッズ', 114: 'ガーディアンズ', 115: 'ロッキーズ',
+  116: 'タイガース', 117: 'アストロズ', 118: 'ロイヤルズ', 119: 'ドジャース',
+  120: 'ナショナルズ', 121: 'メッツ', 133: 'アスレチックス', 134: 'パイレーツ',
+  135: 'パドレス', 136: 'マリナーズ', 137: 'ジャイアンツ', 138: 'カージナルス',
+  139: 'レイズ', 140: 'レンジャーズ', 141: 'ブルージェイズ', 142: 'ツインズ',
+  143: 'フィリーズ', 144: 'ブレーブス', 145: 'ホワイトソックス', 146: 'マーリンズ',
+  147: 'ヤンキース', 158: 'ブルワーズ',
+}
+
+function teamName(id, fallback) {
+  return TEAM_JP[id] || fallback || ''
+}
+
+// 日本時間（JST）に変換して表示用の文字列を作る
+const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土']
+function toJst(iso) {
+  const d = new Date(iso)
+  const parts = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo', month: 'numeric', day: 'numeric',
+    hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false,
+  }).formatToParts(d)
+  const get = (t) => parts.find((p) => p.type === t)?.value || ''
+  return {
+    md: `${get('month')}/${get('day')}`,
+    wd: get('weekday'),
+    time: `${get('hour')}:${get('minute')}`,
+    ymd: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d),
+  }
+}
+
+// ドジャースの試合日程（過去7日〜先14日）
+async function fetchSchedule() {
+  const fmt = (d) => d.toISOString().slice(0, 10)
+  const now = new Date()
+  const start = new Date(now.getTime() - 7 * 86400000)
+  const end = new Date(now.getTime() + 14 * 86400000)
+  try {
+    const res = await fetch(`${API_BASE}/schedule?sportId=1&teamId=119&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team`)
+    if (!res.ok) return []
+    const data = await res.json()
+    const games = []
+    for (const day of data.dates || []) {
+      for (const g of day.games || []) {
+        const homeId = g.teams?.home?.team?.id
+        const isHome = homeId === 119
+        const opp = isHome ? g.teams?.away?.team : g.teams?.home?.team
+        games.push({
+          pk: g.gamePk,
+          dateUTC: g.gameDate,
+          oppId: opp?.id,
+          oppName: teamName(opp?.id, opp?.name),
+          isHome,
+          state: g.status?.abstractGameState, // Preview / Live / Final
+          dodgersScore: isHome ? g.teams?.home?.score : g.teams?.away?.score,
+          oppScore: isHome ? g.teams?.away?.score : g.teams?.home?.score,
+        })
+      }
+    }
+    return games
+  } catch {
+    return []
+  }
+}
+
 // wRC+ / WAR / FIP などのセイバー指標
 async function fetchSabermetrics(season, group) {
   try {
@@ -244,6 +311,7 @@ function App() {
   const [leaders, setLeaders] = useState(null)
   const [teamGames, setTeamGames] = useState(null)
   const [saber, setSaber] = useState({ hitting: null, pitching: null })
+  const [schedule, setSchedule] = useState(null)
   const [leagueFilter, setLeagueFilter] = useState('all')
   const [tab, setTab] = useState('hitting')
   const [selected, setSelected] = useState({ hitting: null, pitching: null })
@@ -284,10 +352,11 @@ function App() {
         const built = { all: { hitting: {}, pitching: {} }, al: { hitting: {}, pitching: {} }, nl: { hitting: {}, pitching: {} } }
         requests.forEach((r, i) => { built[r.league][r.group][r.cat] = results[i] })
 
-        const [tg, saberHit, saberPit] = await Promise.all([
+        const [tg, saberHit, saberPit, sched] = await Promise.all([
           fetchTeamGamesPlayed(yr),
           fetchSabermetrics(yr, 'hitting'),
           fetchSabermetrics(yr, 'pitching'),
+          fetchSchedule(),
         ])
 
         if (cancelled) return
@@ -297,6 +366,7 @@ function App() {
         setLeaders(built)
         setTeamGames(tg)
         setSaber({ hitting: saberHit, pitching: saberPit })
+        setSchedule(sched)
       } catch (e) {
         if (!cancelled) setError(e.message || '読み込みに失敗しました')
       } finally {
@@ -358,6 +428,7 @@ function App() {
       <div className="tabs">
         <button className={`tab ${tab === 'hitting' ? 'active' : ''}`} onClick={() => setTab('hitting')}>打撃</button>
         <button className={`tab ${tab === 'pitching' ? 'active' : ''}`} onClick={() => setTab('pitching')}>投手</button>
+        <button className={`tab ${tab === 'schedule' ? 'active' : ''}`} onClick={() => setTab('schedule')}>日程</button>
       </div>
 
       <main className="content">
@@ -390,6 +461,9 @@ function App() {
             onSelect={(k) => toggleSelect('pitching', k)}
             teamGames={teamGames}
           />
+        )}
+        {!loading && !error && tab === 'schedule' && (
+          <ScheduleView games={schedule} />
         )}
       </main>
 
@@ -640,6 +714,65 @@ function StatsView({ group, stats, data, headlineLabel, leaders, leagueFilter, s
           />
         </div>
       </aside>
+    </div>
+  )
+}
+
+function ScheduleView({ games }) {
+  if (!games) return <div className="loading">読み込み中...</div>
+  if (games.length === 0) return <div className="empty">日程が取得できませんでした</div>
+
+  const todayYmd = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  const upcoming = games.filter((g) => g.state !== 'Final')
+  const recent = games.filter((g) => g.state === 'Final').reverse() // 新しい順
+
+  const renderRow = (g) => {
+    const t = toJst(g.dateUTC)
+    const isToday = t.ymd === todayYmd
+    const live = g.state === 'Live'
+    const final = g.state === 'Final'
+    let result = null
+    if (final && g.dodgersScore != null && g.oppScore != null) {
+      const win = g.dodgersScore > g.oppScore
+      result = (
+        <span className={`sch-result ${win ? 'win' : 'lose'}`}>
+          {win ? '○' : '●'} {g.dodgersScore}-{g.oppScore}
+        </span>
+      )
+    }
+    return (
+      <div key={g.pk} className={`sch-row ${isToday ? 'today' : ''}`}>
+        <div className="sch-date">
+          <span className="sch-md">{t.md}</span>
+          <span className="sch-wd">({t.wd})</span>
+        </div>
+        <div className="sch-match">
+          <span className="sch-vs">{g.isHome ? 'vs' : '@'}</span>
+          <span className="sch-opp">{g.oppName}</span>
+          {g.isHome && <span className="sch-home">ホーム</span>}
+        </div>
+        <div className="sch-right">
+          {final ? result : <span className={`sch-time ${live ? 'live' : ''}`}>{live ? 'LIVE' : t.time}</span>}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="schedule">
+      <div className="sch-note">時刻は日本時間（JST）</div>
+      {upcoming.length > 0 && (
+        <section className="sch-section">
+          <h3 className="metric-group-title">今後の予定</h3>
+          {upcoming.map(renderRow)}
+        </section>
+      )}
+      {recent.length > 0 && (
+        <section className="sch-section">
+          <h3 className="metric-group-title">最近の結果</h3>
+          {recent.map(renderRow)}
+        </section>
+      )}
     </div>
   )
 }

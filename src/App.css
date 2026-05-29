@@ -374,6 +374,109 @@ html.pwa-standalone .hero {
   letter-spacing: 0.04em;
 }
 
+/* 試合日程 */
+.schedule { max-width: 620px; }
+
+.sch-note {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  margin-bottom: 16px;
+}
+
+.sch-section + .sch-section { margin-top: 32px; }
+
+.sch-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 8px;
+  box-shadow: inset 0 -1px 0 var(--soft-2);
+}
+
+.sch-row.today {
+  background: var(--soft);
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+.sch-date {
+  display: flex;
+  flex-direction: column;
+  min-width: 56px;
+  flex-shrink: 0;
+}
+
+.sch-md {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.sch-wd {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.sch-match {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.sch-vs {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.sch-opp {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.sch-home {
+  font-size: 10px;
+  color: var(--navy);
+  background: rgba(0, 90, 156, 0.1);
+  padding: 2px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.sch-right {
+  margin-left: auto;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.sch-time {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+
+.sch-time.live {
+  color: #c0392b;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+.sch-result {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.sch-result.win { color: var(--navy); }
+.sch-result.lose { color: var(--muted); }
+
 /* タップパネル内の指標説明 */
 .rank-desc {
   font-size: 13px;
