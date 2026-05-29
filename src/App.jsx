@@ -185,6 +185,22 @@ async function fetchSabermetrics(season, group) {
   }
 }
 
+// 身長 (例 "6' 4\"") → cm
+function heightToCm(h) {
+  if (!h) return null
+  const m = String(h).match(/(\d+)'\s*(\d+)/)
+  if (!m) return null
+  const feet = Number(m[1])
+  const inch = Number(m[2])
+  return Math.round((feet * 12 + inch) * 2.54)
+}
+
+// 体重 (lb) → kg
+function lbToKg(lb) {
+  if (lb == null || isNaN(lb)) return null
+  return Math.round(Number(lb) * 0.453592)
+}
+
 // 数値フォーマッタ
 const f1 = (n) => (n == null || isNaN(n) ? '—' : Number(n).toFixed(1))
 const f2 = (n) => (n == null || isNaN(n) ? '—' : Number(n).toFixed(2))
@@ -398,12 +414,11 @@ function App() {
           <div className="name-en">SHOHEI OHTANI</div>
           <div className="meta-row">
             {player?.birthDate && <span>生年月日<strong>{player.birthDate}</strong></span>}
-            {player?.height && <span>身長<strong>{player.height}</strong></span>}
-            {player?.weight && <span>体重<strong>{player.weight} lb</strong></span>}
+            {player?.height && <span>身長<strong>{heightToCm(player.height) ? `${heightToCm(player.height)} cm` : player.height}</strong></span>}
+            {player?.weight && <span>体重<strong>{lbToKg(player.weight) ? `${lbToKg(player.weight)} kg` : `${player.weight} lb`}</strong></span>}
             {player?.batSide?.description && <span>打席<strong>{player.batSide.description}</strong></span>}
             {player?.pitchHand?.description && <span>投球<strong>{player.pitchHand.description}</strong></span>}
           </div>
-          <div className="season-label">{season} SEASON</div>
           {(saber.hitting?.war != null || saber.pitching?.war != null) && (
             <div className="twoway">
               <div className="twoway-item">
@@ -429,6 +444,7 @@ function App() {
       </header>
 
       <main className="content">
+        {!loading && !error && <div className="season-label">{season} SEASON</div>}
         {loading && <div className="loading">読み込み中...</div>}
         {error && <div className="error">エラー: {error}</div>}
         {!loading && !error && tab === 'hitting' && (
