@@ -428,12 +428,6 @@ function App() {
         </div>
       </header>
 
-      <div className="tabs">
-        <button className={`tab ${tab === 'hitting' ? 'active' : ''}`} onClick={() => setTab('hitting')}>打撃</button>
-        <button className={`tab ${tab === 'pitching' ? 'active' : ''}`} onClick={() => setTab('pitching')}>投手</button>
-        <button className={`tab ${tab === 'schedule' ? 'active' : ''}`} onClick={() => setTab('schedule')}>日程</button>
-      </div>
-
       <main className="content">
         {loading && <div className="loading">読み込み中...</div>}
         {error && <div className="error">エラー: {error}</div>}
@@ -472,6 +466,13 @@ function App() {
 
       <div className="footer">Data: MLB Stats API · statsapi.mlb.com</div>
       </div>
+      <nav className="tabbar">
+        <div className="tabbar-inner">
+          <button className={`tabbar-btn ${tab === 'hitting' ? 'active' : ''}`} onClick={() => setTab('hitting')}>打撃</button>
+          <button className={`tabbar-btn ${tab === 'pitching' ? 'active' : ''}`} onClick={() => setTab('pitching')}>投手</button>
+          <button className={`tabbar-btn ${tab === 'schedule' ? 'active' : ''}`} onClick={() => setTab('schedule')}>日程</button>
+        </div>
+      </nav>
     </div>
   )
 }
