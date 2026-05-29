@@ -456,6 +456,23 @@ html.pwa-standalone .hero {
   border-radius: 999px;
 }
 
+.game-pitch-tag {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--white);
+  background: linear-gradient(135deg, #005A9C, #003a66);
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+/* 登板日は行を強調 */
+.game-row.pitch {
+  background: rgba(0, 90, 156, 0.06);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
 .game-right { margin-left: auto; }
 
 .game-time {

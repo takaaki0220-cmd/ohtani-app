@@ -142,15 +142,17 @@ async function fetchSchedule() {
   const start = new Date(now.getTime() - 7 * 86400000)
   const end = new Date(now.getTime() + 14 * 86400000)
   try {
-    const res = await fetch(`${API_BASE}/schedule?sportId=1&teamId=119&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team`)
+    const res = await fetch(`${API_BASE}/schedule?sportId=1&teamId=119&startDate=${fmt(start)}&endDate=${fmt(end)}&hydrate=team,probablePitcher`)
     if (!res.ok) return []
     const data = await res.json()
     const games = []
     for (const day of data.dates || []) {
       for (const g of day.games || []) {
-        const homeId = g.teams?.home?.team?.id
-        const isHome = homeId === 119
-        const opp = isHome ? g.teams?.away?.team : g.teams?.home?.team
+        const home = g.teams?.home
+        const away = g.teams?.away
+        const isHome = home?.team?.id === 119
+        const opp = isHome ? away?.team : home?.team
+        const dodgersProbable = isHome ? home?.probablePitcher : away?.probablePitcher
         games.push({
           pk: g.gamePk,
           dateUTC: g.gameDate,
@@ -158,8 +160,9 @@ async function fetchSchedule() {
           oppName: teamName(opp?.id, opp?.name),
           isHome,
           state: g.status?.abstractGameState, // Preview / Live / Final
-          dodgersScore: isHome ? g.teams?.home?.score : g.teams?.away?.score,
-          oppScore: isHome ? g.teams?.away?.score : g.teams?.home?.score,
+          dodgersScore: isHome ? home?.score : away?.score,
+          oppScore: isHome ? away?.score : home?.score,
+          ohtaniPitching: dodgersProbable?.id === PLAYER_ID,
         })
       }
     }
@@ -750,9 +753,10 @@ function ScheduleView({ games }) {
       right = <span className={`game-time ${live ? 'live' : ''}`}>{live ? 'LIVE' : t.time}</span>
     }
     return (
-      <div key={g.pk} className={`game-row ${isToday ? 'today' : ''}`}>
+      <div key={g.pk} className={`game-row ${isToday ? 'today' : ''} ${g.ohtaniPitching ? 'pitch' : ''}`}>
         <span className="game-date">{t.md}<span className="game-wd">（{t.wd}）</span></span>
         {isToday && <span className="game-today-tag">今日</span>}
+        {g.ohtaniPitching && <span className="game-pitch-tag">⚾ 大谷 登板</span>}
         <span className="game-right">{right}</span>
       </div>
     )
