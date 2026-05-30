@@ -484,7 +484,7 @@ function App() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                 <path d="M8 5v14l11-7z" />
               </svg>
-              Prime Videoで観る
+              Prime Video
             </a>
           </div>
         )}
@@ -836,7 +836,6 @@ function ScheduleView({ games }) {
 
   return (
     <div className="schedule">
-      <div className="sch-note">時刻は日本時間（JST）</div>
       {upcoming.length > 0 && (
         <section className="sch-section">
           <h3 className="metric-group-title">今後の予定</h3>

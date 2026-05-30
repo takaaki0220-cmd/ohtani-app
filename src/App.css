@@ -595,13 +595,6 @@ html.pwa-standalone .hero {
 /* 試合日程 */
 .schedule { max-width: 620px; }
 
-.sch-note {
-  font-size: 11px;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-  margin-bottom: 16px;
-}
-
 .sch-section + .sch-section { margin-top: 36px; }
 
 /* シリーズ（連戦）ブロック */
@@ -622,13 +615,12 @@ html.pwa-standalone .hero {
 }
 
 .series-where {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  padding: 2px 8px;
-  border-radius: 999px;
+  letter-spacing: 0.04em;
 }
-.series-where.home { color: var(--navy); background: rgba(0, 90, 156, 0.1); }
-.series-where.away { color: var(--muted); background: var(--soft); }
+.series-where.home { color: var(--navy); }
+.series-where.away { color: var(--muted); }
 
 .series-count {
   font-size: 11px;
