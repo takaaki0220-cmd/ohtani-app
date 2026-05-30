@@ -595,6 +595,8 @@ html.pwa-standalone .hero {
 /* 試合日程 */
 .schedule { max-width: 620px; }
 
+.sch-subtabs { margin: 0 0 22px; }
+
 .sch-section + .sch-section { margin-top: 36px; }
 
 /* シリーズ（連戦）ブロック */

@@ -527,7 +527,7 @@ function App() {
       </div>
       <nav className="tabbar">
         <div className="tabbar-inner">
-          <button className={`tabbar-btn ${tab === 'hitting' ? 'active' : ''}`} onClick={() => setTab('hitting')}>打撃</button>
+          <button className={`tabbar-btn ${tab === 'hitting' ? 'active' : ''}`} onClick={() => setTab('hitting')}>打者</button>
           <button className={`tabbar-btn ${tab === 'pitching' ? 'active' : ''}`} onClick={() => setTab('pitching')}>投手</button>
           <button className={`tabbar-btn ${tab === 'schedule' ? 'active' : ''}`} onClick={() => setTab('schedule')}>日程</button>
         </div>
@@ -618,7 +618,7 @@ function StatsView({ group, stats, data, headlineLabel, leaders, leagueFilter, s
     if (selected) lastSelectedRef.current = selected
   }, [selected])
 
-  if (!stats || !data) return <div className="empty">この期間の{group === 'hitting' ? '打撃' : '投手'}成績はありません</div>
+  if (!stats || !data) return <div className="empty">この期間の{group === 'hitting' ? '打者' : '投手'}成績はありません</div>
   const headline = data.headline
   const groups = data.groups
   const idOf = (it) => it.api || it.label
@@ -838,6 +838,7 @@ async function fetchGameDetail(pk) {
 
 function ScheduleView({ games }) {
   const [detail, setDetail] = useState(null)
+  const [view, setView] = useState('upcoming') // upcoming / recent
 
   if (!games) return <div className="loading">読み込み中...</div>
   if (games.length === 0) return <div className="empty">日程が取得できませんでした</div>
@@ -897,20 +898,16 @@ function ScheduleView({ games }) {
     </div>
   )
 
+  const list = view === 'upcoming' ? upcoming : recent
   return (
     <div className="schedule">
-      {upcoming.length > 0 && (
-        <section className="sch-section">
-          <h3 className="metric-group-title">今後の予定</h3>
-          {upcoming.map(renderSeries)}
-        </section>
-      )}
-      {recent.length > 0 && (
-        <section className="sch-section">
-          <h3 className="metric-group-title">最近の結果</h3>
-          {recent.map(renderSeries)}
-        </section>
-      )}
+      <div className="subtabs sch-subtabs">
+        <button className={`subtab ${view === 'upcoming' ? 'active' : ''}`} onClick={() => setView('upcoming')}>今後の予定</button>
+        <button className={`subtab ${view === 'recent' ? 'active' : ''}`} onClick={() => setView('recent')}>最近の結果</button>
+      </div>
+      {list.length > 0
+        ? list.map(renderSeries)
+        : <div className="empty">{view === 'upcoming' ? '今後の予定はありません' : '最近の結果はありません'}</div>}
       {detail && <GameDetailSheet detail={detail} onClose={() => setDetail(null)} />}
     </div>
   )
@@ -942,7 +939,7 @@ function GameDetailSheet({ detail, onClose }) {
           <>
             {batting && (
               <div className="gd-block">
-                <div className="gd-line-label">打撃</div>
+                <div className="gd-line-label">打者</div>
                 <div className="gd-line">
                   {batting.atBats}打数{batting.hits}安打
                   {batting.homeRuns > 0 && <em> 本塁打{batting.homeRuns}</em>}
