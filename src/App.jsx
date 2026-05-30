@@ -477,7 +477,17 @@ function App() {
       </header>
 
       <main className="content">
-        {!loading && !error && <div className="season-label">{season} SEASON</div>}
+        {!loading && !error && (
+          <div className="season-row">
+            <div className="season-label">{season} SEASON</div>
+            <a className="watch-btn" href="https://www.primevideo.com/" target="_blank" rel="noopener noreferrer">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                <path d="M8 5v14l11-7z" />
+              </svg>
+              Prime Videoで観る
+            </a>
+          </div>
+        )}
         {loading && <div className="loading">読み込み中...</div>}
         {error && <div className="error">エラー: {error}</div>}
         {!loading && !error && tab === 'hitting' && (

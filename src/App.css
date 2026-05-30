@@ -257,13 +257,43 @@ html.pwa-standalone .hero {
 }
 
 /* 本文（白エリア）側のシーズン表示 */
+.season-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 24px;
+}
+
 .season-label {
   font-size: 12px;
   font-weight: 700;
   color: var(--muted);
   letter-spacing: 0.14em;
-  margin: 0 0 24px;
 }
+
+/* Prime Video へのリンクボタン（アプリが入っていればアプリ、無ければブラウザ） */
+.watch-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--white);
+  background: linear-gradient(180deg, #1399FF 0%, #0A7CE0 100%);
+  box-shadow: 0 2px 8px rgba(10, 124, 224, 0.32);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.watch-btn:active {
+  transform: scale(0.96);
+}
+
+.watch-btn svg { opacity: 0.95; }
 
 /* ボトムタブバー（画面下に固定・常駐） */
 /* 画面下に浮かぶフローティングナビ。背景は透過し、裏のスクロールが見える */
