@@ -634,8 +634,23 @@ html.pwa-standalone .hero {
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
   padding: 11px 6px;
   box-shadow: inset 0 -1px 0 var(--soft-2);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.game-row.tappable { cursor: pointer; transition: opacity 0.15s; }
+.game-row.tappable:active { opacity: 0.55; }
+
+.game-chevron {
+  margin-left: 8px;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--muted);
+  opacity: 0.6;
 }
 
 .game-row.today {
@@ -693,7 +708,7 @@ html.pwa-standalone .hero {
 
 .game-row.pitch .game-date { color: var(--navy); }
 
-.game-right { margin-left: auto; }
+.game-right { margin-left: auto; display: inline-flex; align-items: center; }
 
 .game-time {
   font-size: 16px;
@@ -714,6 +729,78 @@ html.pwa-standalone .hero {
 }
 .game-result.win { color: var(--navy); }
 .game-result.lose { color: var(--muted); }
+
+/* 試合詳細シート（大谷の1試合成績） */
+.gd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.18s ease-out;
+}
+
+.gd-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: var(--app-bg);
+  border-radius: 20px 20px 0 0;
+  padding: 20px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  max-height: 86vh;
+  overflow-y: auto;
+  animation: sheetUp 0.24s ease-out;
+}
+
+.gd-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.gd-title { font-size: 18px; font-weight: 800; color: var(--ink); }
+.gd-sub { font-size: 13px; color: var(--muted); margin-top: 4px; }
+.gd-win { color: var(--navy); font-weight: 700; }
+.gd-lose { color: var(--muted); font-weight: 700; }
+.gd-close {
+  width: 30px; height: 30px; border-radius: 50%;
+  font-size: 20px; color: var(--muted); background: var(--soft-2);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+.gd-loading { padding: 28px 0; text-align: center; color: var(--muted); font-size: 14px; }
+
+.gd-block { margin-bottom: 20px; }
+.gd-line-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+.gd-line {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.gd-line em { font-style: normal; color: var(--navy); font-weight: 800; }
+.gd-line span { font-size: 16px; color: var(--muted); font-weight: 600; }
+
+.gd-pas { display: flex; flex-direction: column; gap: 2px; }
+.gd-pa {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 4px;
+  box-shadow: inset 0 -1px 0 var(--soft-2);
+}
+.gd-pa-no { font-size: 13px; font-weight: 600; color: var(--ink); min-width: 64px; }
+.gd-pa-inn { font-size: 12px; color: var(--muted); min-width: 36px; }
+.gd-pa-ev { font-size: 15px; font-weight: 600; color: var(--ink); margin-left: auto; }
+.gd-pa-ev.hit { color: var(--navy); font-weight: 800; }
 
 /* タップパネル内の指標説明 */
 .rank-desc {

@@ -793,7 +793,52 @@ function groupSeries(games) {
   return out
 }
 
+// 打席結果の英語イベント名 → 日本語
+const EVENT_JP = {
+  'Single': '単打', 'Double': '二塁打', 'Triple': '三塁打', 'Home Run': '本塁打',
+  'Strikeout': '三振', 'Strikeout Double Play': '三振併殺',
+  'Walk': '四球', 'Intent Walk': '敬遠', 'Hit By Pitch': '死球',
+  'Groundout': 'ゴロ', 'Bunt Groundout': 'バントゴロ', 'Grounded Into DP': '併殺打',
+  'Flyout': 'フライ', 'Lineout': 'ライナー', 'Pop Out': 'ポップフライ',
+  'Forceout': '封殺', 'Fielders Choice': '野選', 'Fielders Choice Out': '野選',
+  'Sac Fly': '犠飛', 'Sac Bunt': '犠打', 'Field Error': '失策出塁',
+  'Catcher Interference': '打撃妨害', 'Double Play': '併殺',
+}
+const eventJp = (e) => EVENT_JP[e] || e || '—'
+// ヒット系（ネイビー強調する打席）
+const HIT_EVENTS = new Set(['Single', 'Double', 'Triple', 'Home Run'])
+
+// 1試合の大谷の成績（打撃サマリー・投手サマリー・各打席）を取得
+async function fetchGameDetail(pk) {
+  const [boxRes, pbpRes] = await Promise.all([
+    fetch(`${API_BASE}/game/${pk}/boxscore`),
+    fetch(`${API_BASE}/game/${pk}/playByPlay`),
+  ])
+  const box = await boxRes.json()
+  const pbp = await pbpRes.json()
+  let batting = null
+  let pitching = null
+  for (const side of ['home', 'away']) {
+    const pl = box.teams?.[side]?.players?.[`ID${PLAYER_ID}`]
+    if (pl) {
+      const b = pl.stats?.batting
+      const p = pl.stats?.pitching
+      if (b && (b.atBats > 0 || b.baseOnBalls > 0 || b.plateAppearances > 0)) batting = b
+      if (p && p.inningsPitched && p.inningsPitched !== '0.0') pitching = p
+    }
+  }
+  const pas = []
+  for (const play of pbp.allPlays || []) {
+    if (play.matchup?.batter?.id === PLAYER_ID && play.about?.isComplete) {
+      pas.push({ inning: play.about.inning, event: play.result?.event, rbi: play.result?.rbi })
+    }
+  }
+  return { batting, pitching, pas }
+}
+
 function ScheduleView({ games }) {
+  const [detail, setDetail] = useState(null)
+
   if (!games) return <div className="loading">読み込み中...</div>
   if (games.length === 0) return <div className="empty">日程が取得できませんでした</div>
 
@@ -801,11 +846,23 @@ function ScheduleView({ games }) {
   const upcoming = groupSeries(games.filter((g) => g.state !== 'Final'))
   const recent = groupSeries(games.filter((g) => g.state === 'Final')).reverse()
 
-  const renderGameRow = (g) => {
+  const openGame = async (g, oppName) => {
+    if (g.state !== 'Final' && g.state !== 'Live') return // 予定試合は成績なし
+    setDetail({ game: g, oppName, loading: true })
+    try {
+      const d = await fetchGameDetail(g.pk)
+      setDetail({ game: g, oppName, loading: false, ...d })
+    } catch {
+      setDetail({ game: g, oppName, loading: false, error: true })
+    }
+  }
+
+  const renderGameRow = (g, oppName) => {
     const t = toJst(g.dateUTC)
     const isToday = t.ymd === todayYmd
     const live = g.state === 'Live'
     const final = g.state === 'Final'
+    const tappable = final || live
     let right
     if (final && g.dodgersScore != null && g.oppScore != null) {
       const win = g.dodgersScore > g.oppScore
@@ -813,13 +870,19 @@ function ScheduleView({ games }) {
     } else {
       right = <span className={`game-time ${live ? 'live' : ''}`}>{live ? 'LIVE' : t.time}</span>
     }
+    const Tag = tappable ? 'button' : 'div'
     return (
-      <div key={g.pk} className={`game-row ${isToday ? 'today' : ''} ${g.ohtaniPitching ? 'pitch' : ''}`}>
+      <Tag
+        key={g.pk}
+        type={tappable ? 'button' : undefined}
+        className={`game-row ${isToday ? 'today' : ''} ${g.ohtaniPitching ? 'pitch' : ''} ${tappable ? 'tappable' : ''}`}
+        onClick={tappable ? () => openGame(g, oppName) : undefined}
+      >
         <span className="game-date">{t.md}<span className="game-wd">（{t.wd}）</span></span>
         {isToday && <span className="game-today-tag">今日</span>}
         {g.ohtaniPitching && <span className="game-pitch-tag">先発登板</span>}
-        <span className="game-right">{right}</span>
-      </div>
+        <span className="game-right">{right}{tappable && <span className="game-chevron" aria-hidden>›</span>}</span>
+      </Tag>
     )
   }
 
@@ -830,7 +893,7 @@ function ScheduleView({ games }) {
         <span className={`series-where ${s.isHome ? 'home' : 'away'}`}>{s.isHome ? 'ホーム' : 'ビジター'}</span>
         {s.games.length > 1 && <span className="series-count">{s.games.length}連戦</span>}
       </div>
-      <div className="series-games">{s.games.map(renderGameRow)}</div>
+      <div className="series-games">{s.games.map((g) => renderGameRow(g, s.oppName))}</div>
     </div>
   )
 
@@ -848,6 +911,80 @@ function ScheduleView({ games }) {
           {recent.map(renderSeries)}
         </section>
       )}
+      {detail && <GameDetailSheet detail={detail} onClose={() => setDetail(null)} />}
+    </div>
+  )
+}
+
+function GameDetailSheet({ detail, onClose }) {
+  const { game, oppName, loading, error, batting, pitching, pas } = detail
+  const t = toJst(game.dateUTC)
+  const hasResult = game.dodgersScore != null && game.oppScore != null
+  const win = hasResult && game.dodgersScore > game.oppScore
+  return (
+    <div className="gd-overlay" onClick={onClose}>
+      <div className="gd-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="gd-head">
+          <div>
+            <div className="gd-title">ドジャース {game.isHome ? 'vs' : '@'} {oppName}</div>
+            <div className="gd-sub">
+              {t.md}（{t.wd}）{game.state === 'Live' && ' ・ LIVE'}
+              {hasResult && <> ・ <span className={win ? 'gd-win' : 'gd-lose'}>{win ? '○ 勝' : '● 負'} {game.dodgersScore}-{game.oppScore}</span></>}
+            </div>
+          </div>
+          <button className="gd-close" onClick={onClose} aria-label="閉じる">×</button>
+        </div>
+
+        {loading && <div className="gd-loading">読み込み中...</div>}
+        {error && <div className="gd-loading">成績を取得できませんでした</div>}
+
+        {!loading && !error && (
+          <>
+            {batting && (
+              <div className="gd-block">
+                <div className="gd-line-label">打撃</div>
+                <div className="gd-line">
+                  {batting.atBats}打数{batting.hits}安打
+                  {batting.homeRuns > 0 && <em> 本塁打{batting.homeRuns}</em>}
+                  {batting.rbi > 0 && <span> {batting.rbi}打点</span>}
+                  {batting.baseOnBalls > 0 && <span> 四球{batting.baseOnBalls}</span>}
+                  {batting.strikeOuts > 0 && <span> 三振{batting.strikeOuts}</span>}
+                </div>
+              </div>
+            )}
+
+            {pitching && (
+              <div className="gd-block">
+                <div className="gd-line-label">投手</div>
+                <div className="gd-line">
+                  {pitching.inningsPitched}回 被安打{pitching.hits} 自責{pitching.earnedRuns} 奪三振{pitching.strikeOuts} 与四球{pitching.baseOnBalls}
+                </div>
+              </div>
+            )}
+
+            {pas && pas.length > 0 && (
+              <div className="gd-block">
+                <div className="gd-line-label">打席ごとの結果</div>
+                <div className="gd-pas">
+                  {pas.map((pa, i) => (
+                    <div className="gd-pa" key={i}>
+                      <span className="gd-pa-no">{i + 1}打席目</span>
+                      <span className="gd-pa-inn">{pa.inning}回</span>
+                      <span className={`gd-pa-ev ${HIT_EVENTS.has(pa.event) ? 'hit' : ''}`}>
+                        {eventJp(pa.event)}{pa.rbi > 0 ? ` (${pa.rbi}打点)` : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!batting && !pitching && (!pas || pas.length === 0) && (
+              <div className="gd-loading">この試合の大谷の出場記録はありません</div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
