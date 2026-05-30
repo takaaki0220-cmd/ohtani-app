@@ -918,9 +918,75 @@ function GameDetailSheet({ detail, onClose }) {
   const t = toJst(game.dateUTC)
   const hasResult = game.dodgersScore != null && game.oppScore != null
   const win = hasResult && game.dodgersScore > game.oppScore
+
+  // 右ドロワー: スワイプで閉じる（ランキングと同じ挙動）
+  const drawerRef = useRef(null)
+  const backdropRef = useRef(null)
+  const startX = useRef(0)
+  const startY = useRef(0)
+  const dxRef = useRef(0)
+  const swiping = useRef(false)
+  const closingRef = useRef(false)
+
+  const animateClose = () => {
+    if (closingRef.current) return
+    closingRef.current = true
+    if (drawerRef.current) {
+      drawerRef.current.style.transition = 'transform 0.22s ease-in'
+      drawerRef.current.style.transform = 'translateX(100%)'
+    }
+    if (backdropRef.current) {
+      backdropRef.current.style.transition = 'opacity 0.22s ease-in'
+      backdropRef.current.style.opacity = '0'
+    }
+    setTimeout(onClose, 220)
+  }
+  const onTouchStart = (e) => {
+    if (closingRef.current) return
+    startX.current = e.touches[0].clientX
+    startY.current = e.touches[0].clientY
+    dxRef.current = 0
+    swiping.current = false
+    if (drawerRef.current) { drawerRef.current.style.transition = 'none'; drawerRef.current.style.animation = 'none' }
+  }
+  const onTouchMove = (e) => {
+    if (closingRef.current) return
+    const dx = e.touches[0].clientX - startX.current
+    const dy = e.touches[0].clientY - startY.current
+    if (!swiping.current) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return
+      if (Math.abs(dx) > Math.abs(dy) && dx > 0) swiping.current = true
+      else return
+    }
+    if (dx > 0) {
+      dxRef.current = dx
+      if (drawerRef.current) drawerRef.current.style.transform = `translateX(${dx}px)`
+      if (backdropRef.current) backdropRef.current.style.opacity = String(Math.max(0, 0.45 * (1 - dx / 400)))
+    }
+  }
+  const onTouchEnd = () => {
+    if (closingRef.current) return
+    if (dxRef.current > 80) {
+      animateClose()
+    } else {
+      if (drawerRef.current) { drawerRef.current.style.transition = 'transform 0.2s ease-out'; drawerRef.current.style.transform = '' }
+      if (backdropRef.current) { backdropRef.current.style.transition = 'opacity 0.2s ease-out'; backdropRef.current.style.opacity = '' }
+    }
+    dxRef.current = 0
+    swiping.current = false
+  }
+
   return (
-    <div className="gd-overlay" onClick={onClose}>
-      <div className="gd-sheet" onClick={(e) => e.stopPropagation()}>
+    <>
+      <div className="gd-backdrop" ref={backdropRef} onClick={animateClose} aria-hidden />
+      <aside
+        className="gd-drawer"
+        ref={drawerRef}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
+        <div className="gd-panel">
         <div className="gd-head">
           <div>
             <div className="gd-title">ドジャース {game.isHome ? 'vs' : '@'} {oppName}</div>
@@ -929,7 +995,7 @@ function GameDetailSheet({ detail, onClose }) {
               {hasResult && <> ・ <span className={win ? 'gd-win' : 'gd-lose'}>{win ? '○ 勝' : '● 負'} {game.dodgersScore}-{game.oppScore}</span></>}
             </div>
           </div>
-          <button className="gd-close" onClick={onClose} aria-label="閉じる">×</button>
+          <button className="gd-close" onClick={animateClose} aria-label="閉じる">×</button>
         </div>
 
         {loading && <div className="gd-loading">読み込み中...</div>}
@@ -981,8 +1047,9 @@ function GameDetailSheet({ detail, onClose }) {
             )}
           </>
         )}
-      </div>
-    </div>
+        </div>
+      </aside>
+    </>
   )
 }
 
