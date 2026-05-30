@@ -16,7 +16,7 @@
   },
   // 通知の購読情報・試合の通知済み状態を保存する KV
   "kv_namespaces": [
-    { "binding": "KV", "id": "__REPLACE_WITH_KV_ID__" }
+    { "binding": "KV", "id": "2794dc91ba684f6292c7fdc760f1952c" }
   ],
   // 1分ごとに試合を監視（試合中以外はすぐ終了）
   "triggers": {
