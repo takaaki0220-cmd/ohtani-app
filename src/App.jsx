@@ -39,6 +39,22 @@ const LEAGUES = [
   { key: 'nl', label: 'ナ・リーグ', id: 104 },
 ]
 
+// 初回に取得するリーグ（カードの順位表示は総合とナ・リーグのみ使用）。
+// ア・リーグ(al)はランキングのサブタブを開いた時に遅延取得する。
+const INITIAL_LEAGUE_KEYS = ['all', 'nl']
+
+// 指定リーグ1つ分の全カテゴリ(打撃+投手)のリーダーをまとめて取得
+async function fetchLeagueLeaders(leagueId, season) {
+  const reqs = [
+    ...HITTING_CATEGORIES.map((c) => ({ group: 'hitting', cat: c.api, p: fetchLeaders(c.api, season, leagueId, 'hitting') })),
+    ...PITCHING_CATEGORIES.map((c) => ({ group: 'pitching', cat: c.api, p: fetchLeaders(c.api, season, leagueId, 'pitching') })),
+  ]
+  const results = await Promise.all(reqs.map((r) => r.p))
+  const out = { hitting: {}, pitching: {} }
+  reqs.forEach((r, i) => { out[r.group][r.cat] = results[i] })
+  return out
+}
+
 function getInitialSeason() {
   const now = new Date()
   const y = now.getFullYear()
@@ -358,18 +374,12 @@ function App() {
           yr = yr - 1
           s = await fetchSeasonStats(yr)
         }
-        const requests = []
-        for (const lg of LEAGUES) {
-          for (const c of HITTING_CATEGORIES) {
-            requests.push({ league: lg.key, group: 'hitting', cat: c.api, p: fetchLeaders(c.api, yr, lg.id, 'hitting') })
-          }
-          for (const c of PITCHING_CATEGORIES) {
-            requests.push({ league: lg.key, group: 'pitching', cat: c.api, p: fetchLeaders(c.api, yr, lg.id, 'pitching') })
-          }
-        }
-        const results = await Promise.all(requests.map((r) => r.p))
-        const built = { all: { hitting: {}, pitching: {} }, al: { hitting: {}, pitching: {} }, nl: { hitting: {}, pitching: {} } }
-        requests.forEach((r, i) => { built[r.league][r.group][r.cat] = results[i] })
+        // カード表示に必要な総合(all)とナ・リーグ(nl)だけを初回取得（al は遅延）
+        const initialLeagues = await Promise.all(
+          INITIAL_LEAGUE_KEYS.map((k) => fetchLeagueLeaders(LEAGUES.find((l) => l.key === k).id, yr)),
+        )
+        const built = {}
+        INITIAL_LEAGUE_KEYS.forEach((k, i) => { built[k] = initialLeagues[i] })
 
         const [tg, saberHit, saberPit, sched] = await Promise.all([
           fetchTeamGamesPlayed(yr),
@@ -398,6 +408,19 @@ function App() {
 
   const toggleSelect = (group, apiKey) => {
     setSelected((cur) => ({ ...cur, [group]: cur[group] === apiKey ? null : apiKey }))
+  }
+
+  // ランキングのサブタブで未取得リーグ(al)が選ばれたら遅延取得
+  const loadingLeagueRef = useRef({})
+  const ensureLeague = (key) => {
+    setLeagueFilter(key)
+    const lg = LEAGUES.find((l) => l.key === key)
+    if (!lg || lg.id == null) return // 'all' はID無し＝取得済み扱い
+    if (leaders?.[key] || loadingLeagueRef.current[key]) return // 取得済み or 取得中
+    loadingLeagueRef.current[key] = true
+    fetchLeagueLeaders(lg.id, season).then((data) => {
+      setLeaders((cur) => ({ ...cur, [key]: data }))
+    })
   }
 
   return (
@@ -455,7 +478,7 @@ function App() {
             headlineLabel={<>ホームラン<br />HOME RUNS</>}
             leaders={leaders}
             leagueFilter={leagueFilter}
-            setLeagueFilter={setLeagueFilter}
+            setLeagueFilter={ensureLeague}
             selected={selected.hitting}
             onSelect={(k) => toggleSelect('hitting', k)}
             teamGames={teamGames}
@@ -469,7 +492,7 @@ function App() {
             headlineLabel={<>奪三振<br />STRIKEOUTS</>}
             leaders={leaders}
             leagueFilter={leagueFilter}
-            setLeagueFilter={setLeagueFilter}
+            setLeagueFilter={ensureLeague}
             selected={selected.pitching}
             onSelect={(k) => toggleSelect('pitching', k)}
             teamGames={teamGames}
@@ -725,7 +748,7 @@ function StatsView({ group, stats, data, headlineLabel, leaders, leagueFilter, s
         <div className="detail-side-sticky">
           <RankingPanel
             selected={displaySelected}
-            selectedItem={selectedItem || (headline && headline.api === displaySelected ? headline : null)}
+            selectedItem={selectedItem}
             group={group}
             leaders={leaders}
             leagueFilter={leagueFilter}
@@ -779,8 +802,8 @@ function ScheduleView({ games }) {
     )
   }
 
-  const renderSeries = (s, i) => (
-    <div className="series" key={i}>
+  const renderSeries = (s) => (
+    <div className="series" key={`${s.oppId}-${s.isHome}-${s.games[0]?.pk}`}>
       <div className="series-head">
         <span className="series-opp">{s.oppName}</span>
         <span className={`series-where ${s.isHome ? 'home' : 'away'}`}>{s.isHome ? 'ホーム' : 'ビジター'}</span>
@@ -841,13 +864,13 @@ function QualifierCard({ ip, teamGames }) {
 function HeadlineStat({ v, label, apiKey, selected, onSelect, pace }) {
   const active = selected === apiKey
   return (
-    <div className={`headline-stat ${active ? 'active' : ''}`} onClick={() => onSelect(apiKey)} role="button">
+    <button type="button" className={`headline-stat ${active ? 'active' : ''}`} onClick={() => onSelect(apiKey)}>
       <div className="num">{v ?? '—'}</div>
       <div className="headline-body">
         <div className="label">{label}</div>
         {pace != null && <div className="headline-pace">162試合換算 {pace}</div>}
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -857,10 +880,10 @@ function StatCard({ v, label, sub, feature, isSelected, onClick, ranks }) {
     ? [ranks.nl ? `NL ${ranks.nl}位` : null, ranks.all ? `全${ranks.all}位` : null].filter(Boolean).join(' · ')
     : null
   return (
-    <div
+    <button
+      type="button"
       className={`stat ${isSelected ? 'active' : ''} ${feature ? 'feature' : ''}`}
       onClick={onClick}
-      role="button"
     >
       <div className="v">{v ?? '—'}</div>
       <div className="k">
@@ -868,7 +891,7 @@ function StatCard({ v, label, sub, feature, isSelected, onClick, ranks }) {
         {sub && <span className="k-sub"> {sub}</span>}
       </div>
       {rankText && <div className="stat-rank">{rankText}</div>}
-    </div>
+    </button>
   )
 }
 
@@ -885,10 +908,11 @@ function RankingPanel({ selected, selectedItem, group, leaders, leagueFilter, se
     )
   }
   const apiKey = selectedItem.api
+  const leagueLoaded = !!leaders?.[leagueFilter]
   const data = apiKey ? (leaders?.[leagueFilter]?.[group]?.[apiKey] || []) : []
-  const hasRanking = !!apiKey && data.length > 0
+  // この指標にランキングが存在するか（apiKeyがあり、いずれかの取得済みリーグにデータがある）
+  const rankingExists = !!apiKey && Object.values(leaders || {}).some((lg) => (lg?.[group]?.[apiKey] || []).length > 0)
   const ohtani = data.find((l) => String(l.person?.id) === String(PLAYER_ID))
-  const topPct = ohtani && data.length > 1 ? Math.max(1, Math.round((ohtani.rank / data.length) * 100)) : null
   const leagueLabel = LEAGUES.find((l) => l.key === leagueFilter)?.label || ''
   return (
     <div className="rank-panel">
@@ -897,7 +921,7 @@ function RankingPanel({ selected, selectedItem, group, leaders, leagueFilter, se
         <button className="rank-close" onClick={onClose} aria-label="閉じる">×</button>
       </div>
       {selectedItem.desc && <p className="rank-desc">{selectedItem.desc}</p>}
-      {hasRanking && (
+      {rankingExists && (
         <>
           <div className="subtabs">
             {LEAGUES.map((l) => (
@@ -910,13 +934,18 @@ function RankingPanel({ selected, selectedItem, group, leaders, leagueFilter, se
               </button>
             ))}
           </div>
-          {ohtani && (
-            <div className="rank-summary">
-              <span className="rank-summary-pos">{leagueLabel} <strong>{ohtani.rank}位</strong></span>
-              {topPct != null && <span className="rank-summary-pct">上位 {topPct}%（{data.length}人中）</span>}
-            </div>
+          {!leagueLoaded ? (
+            <div className="rank-loading">読み込み中...</div>
+          ) : (
+            <>
+              {ohtani && (
+                <div className="rank-summary">
+                  <span className="rank-summary-pos">{leagueLabel} <strong>{ohtani.rank}位</strong>（{data.length}人中）</span>
+                </div>
+              )}
+              <LeaderList leaders={data} />
+            </>
           )}
-          <LeaderList leaders={data} />
         </>
       )}
     </div>
