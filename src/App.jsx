@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './App.css'
+import NotificationSettings from './NotificationSettings.jsx'
 
 const PLAYER_ID = 660271
 const API_BASE = 'https://statsapi.mlb.com/api/v1'
@@ -352,6 +353,7 @@ function App() {
   const [selected, setSelected] = useState({ hitting: null, pitching: null })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showNotif, setShowNotif] = useState(false)
 
   // PWA standalone モード検出 → html に class を付ける（CSS media query のフォールバック）
   useEffect(() => {
@@ -432,7 +434,15 @@ function App() {
       >
       <header className="hero">
         <div className="hero-inner">
-          <div className="eyebrow">Los Angeles Dodgers · #17</div>
+          <div className="eyebrow-row">
+            <div className="eyebrow">Los Angeles Dodgers · #17</div>
+            <button className="bell-btn" onClick={() => setShowNotif(true)} aria-label="通知設定">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+              </svg>
+            </button>
+          </div>
           <h1 className="name">大谷 翔平</h1>
           <div className="name-en">SHOHEI OHTANI</div>
           <div className="meta-row">
@@ -512,6 +522,7 @@ function App() {
           <button className={`tabbar-btn ${tab === 'schedule' ? 'active' : ''}`} onClick={() => setTab('schedule')}>日程</button>
         </div>
       </nav>
+      {showNotif && <NotificationSettings onClose={() => setShowNotif(false)} />}
     </div>
   )
 }

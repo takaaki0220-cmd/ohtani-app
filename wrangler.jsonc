@@ -1,13 +1,29 @@
 {
   // Cloudflare Workers の設定ファイル
-  // 静的アセット (Vite ビルド成果物) を配信する SPA 構成
+  // 静的アセット配信 + 通知API + Cronによる試合監視
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "ohtani-app",
   "compatibility_date": "2026-05-01",
+  // Worker 本体（APIルートと Cron 処理）
+  "main": "worker/index.js",
   "assets": {
     // npm run build の出力先
     "directory": "./dist",
+    // Worker から静的アセットを配信するためのバインディング
+    "binding": "ASSETS",
     // SPA のため、見つからないパスは index.html にフォールバック
     "not_found_handling": "single-page-application"
+  },
+  // 通知の購読情報・試合の通知済み状態を保存する KV
+  "kv_namespaces": [
+    { "binding": "KV", "id": "__REPLACE_WITH_KV_ID__" }
+  ],
+  // 1分ごとに試合を監視（試合中以外はすぐ終了）
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+  // VAPID 公開鍵（公開情報なので平文で可）。秘密鍵は wrangler secret / ダッシュボードで設定
+  "vars": {
+    "VAPID_PUBLIC_KEY": "BGCiAIPn1UZBNsuoOHmKH57-hwcruSITv50m1syD4-PRpNsWPADuZDXHI8yM0hXXEM5pZD0djnlsPv2TjWwnFGc"
   }
 }

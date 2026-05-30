@@ -7,8 +7,14 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       includeAssets: ['apple-touch-icon.png', 'favicon-32.png'],
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+      },
       manifest: {
         name: '大谷翔平 リアルタイム成績',
         short_name: '大谷成績',
@@ -24,23 +30,6 @@ export default defineConfig({
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
           { src: '/icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-        ],
-      },
-      workbox: {
-        // index.html と静的アセットを先読みキャッシュ
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        // MLB API のレスポンスをネットワーク優先でキャッシュ
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) => url.origin === 'https://statsapi.mlb.com',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'mlb-stats-api',
-              networkTimeoutSeconds: 5,
-              expiration: { maxEntries: 100, maxAgeSeconds: 60 * 30 }, // 30分
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
         ],
       },
     }),
