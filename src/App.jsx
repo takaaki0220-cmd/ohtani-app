@@ -1003,6 +1003,15 @@ function GameDetailSheet({ detail, onClose }) {
 
         {!loading && !error && (
           <>
+            {pitching && (
+              <div className="gd-block">
+                <div className="gd-line-label">投手</div>
+                <div className="gd-line">
+                  {pitching.inningsPitched}回 被安打{pitching.hits} 自責{pitching.earnedRuns} 奪三振{pitching.strikeOuts} 与四球{pitching.baseOnBalls}
+                </div>
+              </div>
+            )}
+
             {batting && (
               <div className="gd-block">
                 <div className="gd-line-label">打者</div>
@@ -1012,15 +1021,6 @@ function GameDetailSheet({ detail, onClose }) {
                   {batting.rbi > 0 && <span> {batting.rbi}打点</span>}
                   {batting.baseOnBalls > 0 && <span> 四球{batting.baseOnBalls}</span>}
                   {batting.strikeOuts > 0 && <span> 三振{batting.strikeOuts}</span>}
-                </div>
-              </div>
-            )}
-
-            {pitching && (
-              <div className="gd-block">
-                <div className="gd-line-label">投手</div>
-                <div className="gd-line">
-                  {pitching.inningsPitched}回 被安打{pitching.hits} 自責{pitching.earnedRuns} 奪三振{pitching.strikeOuts} 与四球{pitching.baseOnBalls}
                 </div>
               </div>
             )}
