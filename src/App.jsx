@@ -807,7 +807,7 @@ function ScheduleView({ games }) {
       <div key={g.pk} className={`game-row ${isToday ? 'today' : ''} ${g.ohtaniPitching ? 'pitch' : ''}`}>
         <span className="game-date">{t.md}<span className="game-wd">（{t.wd}）</span></span>
         {isToday && <span className="game-today-tag">今日</span>}
-        {g.ohtaniPitching && <span className="game-pitch-tag">⚾ 大谷 登板</span>}
+        {g.ohtaniPitching && <span className="game-pitch-tag">先発登板</span>}
         <span className="game-right">{right}</span>
       </div>
     )

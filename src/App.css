@@ -654,21 +654,31 @@ html.pwa-standalone .hero {
 }
 
 .game-pitch-tag {
-  font-size: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--white);
-  background: linear-gradient(135deg, #005A9C, #003a66);
-  padding: 3px 9px;
-  border-radius: 999px;
-  letter-spacing: 0.02em;
+  color: var(--navy);
+  letter-spacing: 0.04em;
 }
 
-/* 登板日は行を強調 */
+.game-pitch-tag::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--navy);
+}
+
+/* 登板日は行をさりげなく強調 */
 .game-row.pitch {
-  background: rgba(0, 90, 156, 0.06);
+  background: rgba(0, 90, 156, 0.05);
   border-radius: 8px;
   box-shadow: none;
 }
+
+.game-row.pitch .game-date { color: var(--navy); }
 
 .game-right { margin-left: auto; }
 
