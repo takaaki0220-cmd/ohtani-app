@@ -623,8 +623,9 @@ html.pwa-standalone .hero {
 
 .game-row {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
   width: 100%;
   padding: 11px 6px;
   box-shadow: inset 0 -1px 0 var(--soft-2);
@@ -632,6 +633,45 @@ html.pwa-standalone .hero {
   font: inherit;
   color: inherit;
 }
+
+.game-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+/* 大谷の1試合成績（投／打。二刀流は2行） */
+.game-ohtani {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-left: 2px;
+}
+
+.game-oh-line {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.game-oh-tag {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--white);
+}
+.game-oh-tag.pitch { background: var(--navy); }
+.game-oh-tag.bat { background: var(--muted); }
 
 .game-row.tappable { cursor: pointer; transition: opacity 0.15s; }
 .game-row.tappable:active { opacity: 0.55; }

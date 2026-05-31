@@ -816,6 +816,39 @@ const eventJp = (e) => EVENT_JP[e] || e || '—'
 // ヒット系（ネイビー強調する打席）
 const HIT_EVENTS = new Set(['Single', 'Double', 'Triple', 'Home Run'])
 
+// 1試合の打撃成績を1行テキストに（最近の結果の行表示用）
+function fmtBattingLine(b) {
+  const parts = [`${b.atBats}打数${b.hits}安打`]
+  if (b.homeRuns > 0) parts.push(`本塁打${b.homeRuns}`)
+  if (b.rbi > 0) parts.push(`${b.rbi}打点`)
+  if (b.baseOnBalls > 0) parts.push(`四球${b.baseOnBalls}`)
+  if (b.strikeOuts > 0) parts.push(`三振${b.strikeOuts}`)
+  return parts.join(' ')
+}
+// 1試合の投球成績を1行テキストに（最近の結果の行表示用）
+function fmtPitchingLine(p) {
+  return `${p.inningsPitched}回 被安打${p.hits} 自責${p.earnedRuns} 奪三振${p.strikeOuts} 与四球${p.baseOnBalls}`
+}
+
+// リスト表示用: boxscore だけ取って大谷の打撃/投球サマリーを返す（軽量・playByPlayは取らない）
+async function fetchGameBoxSummary(pk) {
+  const res = await fetch(`${API_BASE}/game/${pk}/boxscore`)
+  if (!res.ok) return null
+  const box = await res.json()
+  let batting = null
+  let pitching = null
+  for (const side of ['home', 'away']) {
+    const pl = box.teams?.[side]?.players?.[`ID${PLAYER_ID}`]
+    if (pl) {
+      const b = pl.stats?.batting
+      const p = pl.stats?.pitching
+      if (b && (b.atBats > 0 || b.baseOnBalls > 0 || b.plateAppearances > 0)) batting = b
+      if (p && p.inningsPitched && p.inningsPitched !== '0.0') pitching = p
+    }
+  }
+  return { batting, pitching }
+}
+
 // 1試合の大谷の成績（打撃サマリー・投手サマリー・各打席）を取得
 async function fetchGameDetail(pk) {
   const [boxRes, pbpRes] = await Promise.all([
@@ -847,6 +880,25 @@ async function fetchGameDetail(pk) {
 function ScheduleView({ games }) {
   const [detail, setDetail] = useState(null)
   const [view, setView] = useState('upcoming') // upcoming / recent
+  const [summaries, setSummaries] = useState({}) // pk -> { batting, pitching }
+
+  // 「最近の結果」を開いたら、完了した各試合の大谷成績(boxscore)を取得
+  useEffect(() => {
+    if (view !== 'recent' || !games) return
+    const finals = games.filter((g) => g.state === 'Final')
+    let cancelled = false
+    Promise.all(
+      finals.map(async (g) => [g.pk, await fetchGameBoxSummary(g.pk).catch(() => null)])
+    ).then((entries) => {
+      if (cancelled) return
+      setSummaries((prev) => {
+        const next = { ...prev }
+        for (const [pk, s] of entries) if (s) next[pk] = s
+        return next
+      })
+    })
+    return () => { cancelled = true }
+  }, [view, games])
 
   if (!games) return <div className="loading">読み込み中...</div>
   if (games.length === 0) return <div className="empty">日程が取得できませんでした</div>
@@ -879,6 +931,7 @@ function ScheduleView({ games }) {
     } else {
       right = <span className={`game-time ${live ? 'live' : ''}`}>{live ? 'LIVE' : t.time}</span>
     }
+    const sum = summaries[g.pk]
     const Tag = tappable ? 'button' : 'div'
     return (
       <Tag
@@ -887,10 +940,26 @@ function ScheduleView({ games }) {
         className={`game-row ${isToday ? 'today' : ''} ${g.ohtaniPitching ? 'pitch' : ''} ${tappable ? 'tappable' : ''}`}
         onClick={tappable ? () => openGame(g, oppName) : undefined}
       >
-        <span className="game-date">{t.md}<span className="game-wd">（{t.wd}）</span></span>
-        {isToday && <span className="game-today-tag">今日</span>}
-        {g.ohtaniPitching && <span className="game-pitch-tag">先発登板</span>}
-        <span className="game-right">{right}{tappable && <span className="game-chevron" aria-hidden>›</span>}</span>
+        <span className="game-row-main">
+          <span className="game-date">{t.md}<span className="game-wd">（{t.wd}）</span></span>
+          {isToday && <span className="game-today-tag">今日</span>}
+          {g.ohtaniPitching && <span className="game-pitch-tag">先発登板</span>}
+          <span className="game-right">{right}{tappable && <span className="game-chevron" aria-hidden>›</span>}</span>
+        </span>
+        {sum && (sum.pitching || sum.batting) && (
+          <span className="game-ohtani">
+            {sum.pitching && (
+              <span className="game-oh-line">
+                <span className="game-oh-tag pitch">投</span>{fmtPitchingLine(sum.pitching)}
+              </span>
+            )}
+            {sum.batting && (
+              <span className="game-oh-line">
+                <span className="game-oh-tag bat">打</span>{fmtBattingLine(sum.batting)}
+              </span>
+            )}
+          </span>
+        )}
       </Tag>
     )
   }
