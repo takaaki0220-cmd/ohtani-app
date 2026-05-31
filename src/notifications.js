@@ -85,15 +85,3 @@ export async function disablePush() {
   })
   await sub.unsubscribe()
 }
-
-// テスト通知を送る
-export async function sendTestPush() {
-  const sub = await getExistingSubscription()
-  if (!sub) throw new Error('先に通知を有効にしてください')
-  const res = await fetch('/api/test-push', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ subscription: sub }),
-  })
-  return res.json()
-}
