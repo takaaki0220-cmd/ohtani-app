@@ -820,7 +820,7 @@ const HIT_EVENTS = new Set(['Single', 'Double', 'Triple', 'Home Run'])
 function fmtBattingLine(b) {
   const parts = [`${b.atBats}打数${b.hits}安打`]
   if (b.homeRuns > 0) parts.push(`本塁打${b.homeRuns}`)
-  if (b.rbi > 0) parts.push(`${b.rbi}打点`)
+  if (b.rbi > 0) parts.push(`打点${b.rbi}`)
   if (b.baseOnBalls > 0) parts.push(`四球${b.baseOnBalls}`)
   if (b.strikeOuts > 0) parts.push(`三振${b.strikeOuts}`)
   return parts.join(' ')
@@ -1098,7 +1098,7 @@ function GameDetailSheet({ detail, onClose }) {
                 <div className="gd-line">
                   {batting.atBats}打数{batting.hits}安打
                   {batting.homeRuns > 0 && <em> 本塁打{batting.homeRuns}</em>}
-                  {batting.rbi > 0 && <span> {batting.rbi}打点</span>}
+                  {batting.rbi > 0 && <span> 打点{batting.rbi}</span>}
                   {batting.baseOnBalls > 0 && <span> 四球{batting.baseOnBalls}</span>}
                   {batting.strikeOuts > 0 && <span> 三振{batting.strikeOuts}</span>}
                 </div>
