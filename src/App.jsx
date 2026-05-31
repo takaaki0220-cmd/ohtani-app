@@ -481,7 +481,7 @@ function App() {
         {!loading && !error && (
           <div className="season-row">
             <div className="season-label">{season} SEASON</div>
-            <a className="watch-btn" href="https://www.primevideo.com/" target="_blank" rel="noopener noreferrer">
+            <a className="watch-btn" href="https://www.primevideo.com/-/ja/sports" target="_blank" rel="noopener noreferrer">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
                 <path d="M8 5v14l11-7z" />
               </svg>
