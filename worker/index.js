@@ -52,15 +52,18 @@ async function sendToAll(subs, ev, env) {
       if (res.status === 404 || res.status === 410) {
         await env.KV.delete(s.key) // 失効した購読は削除
       }
-    } catch {
-      // 個別失敗は無視
+    } catch (e) {
+      console.error('push 送信失敗', e) // 個別失敗はログに残して続行
     }
   }
 }
 
 // ---- Cron: 試合監視 ----
 async function runScheduled(env) {
-  if (!env.VAPID_PRIVATE_JWK) return // 未設定なら何もしない
+  if (!env.VAPID_PRIVATE_JWK) {
+    console.warn('VAPID_PRIVATE_JWK 未設定のため通知をスキップ')
+    return
+  }
   const day = 86400000
   const fmt = (d) => d.toISOString().slice(0, 10)
   const now = new Date()
@@ -141,10 +144,17 @@ async function runScheduled(env) {
         const side = isHome ? 'home' : 'away'
         const pl = feed.liveData?.boxscore?.teams?.[side]?.players?.[`ID${OHTANI_ID}`]
         const b = pl?.stats?.batting
-        let line = ''
-        if (b && b.atBats != null) {
-          line = ` ／ 大谷 ${b.hits}-${b.atBats}${b.homeRuns ? ` HR${b.homeRuns}` : ''}${b.rbi ? ` ${b.rbi}打点` : ''}`
+        const p = pl?.stats?.pitching
+        const parts = []
+        // 投手として登板した試合は投手成績も（アプリ内の試合詳細と同じ語彙）
+        if (p && p.inningsPitched && p.inningsPitched !== '0.0') {
+          parts.push(`投${p.inningsPitched}回 ${p.strikeOuts}奪三振 自責${p.earnedRuns}`)
         }
+        // 打撃は日本式（米国式「安打-打数」をやめ、5打数1安打 の形に）
+        if (b && b.atBats != null) {
+          parts.push(`${b.atBats}打数${b.hits}安打${b.homeRuns ? ` 本塁打${b.homeRuns}` : ''}${b.rbi ? ` ${b.rbi}打点` : ''}`)
+        }
+        const line = parts.length ? ` ／ 大谷 ${parts.join(' ')}` : ''
         body = `${wl} ${dR}-${oR}（vs ${oppName}）${line}`
       }
       events.push({ type: 'final', title: '🏁 試合終了', body, tag: `final-${pk}` })
@@ -179,17 +189,6 @@ export default {
       const { endpoint } = await request.json().catch(() => ({}))
       if (endpoint) await env.KV.delete(`sub:${await sha256hex(endpoint)}`)
       return json({ ok: true })
-    }
-
-    if (p === '/api/test-push' && request.method === 'POST') {
-      const { subscription } = await request.json().catch(() => ({}))
-      if (!subscription?.endpoint) return json({ error: 'invalid subscription' }, 400)
-      try {
-        const res = await sendPush(subscription, { title: '🔔 テスト通知', body: '通知の準備ができました！', tag: 'test', url: '/' }, env)
-        return json({ ok: res.ok, status: res.status })
-      } catch (e) {
-        return json({ ok: false, error: String(e) }, 500)
-      }
     }
 
     // それ以外は静的アセット（SPAフォールバックは not_found_handling が処理）

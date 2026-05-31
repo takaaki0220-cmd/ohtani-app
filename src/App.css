@@ -202,17 +202,6 @@ html.pwa-standalone .hero {
 }
 .ns-switch.on .ns-knob { transform: translateX(18px); }
 
-.ns-test {
-  width: 100%;
-  margin-top: 18px;
-  padding: 12px;
-  border-radius: 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--navy);
-  background: rgba(0, 90, 156, 0.08);
-}
-
 .ns-msg {
   margin: 14px 0 0;
   font-size: 13px;
@@ -1118,6 +1107,16 @@ html.pwa-standalone .hero {
 }
 
 .error { color: #b00020; }
+.error-text { margin: 0 0 16px; }
+.retry-btn {
+  padding: 10px 28px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--navy);
+}
+.retry-btn:disabled { opacity: 0.5; }
 
 .footer {
   text-align: center;

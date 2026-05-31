@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   DEFAULT_PREFS, pushSupported, isStandalone, permissionState,
-  getExistingSubscription, enablePush, savePrefs, disablePush, sendTestPush,
+  getExistingSubscription, enablePush, savePrefs, disablePush,
 } from './notifications'
 
 const EVENTS = [
@@ -72,18 +72,6 @@ export default function NotificationSettings({ onClose }) {
     }
   }
 
-  const handleTest = async () => {
-    setBusy(true); setMsg('')
-    try {
-      const r = await sendTestPush()
-      setMsg(r.ok ? 'テスト通知を送信しました' : `送信失敗（${r.status || ''}）`)
-    } catch (e) {
-      setMsg(e.message || 'テスト送信に失敗しました')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
     <div className="ns-overlay" onClick={onClose}>
       <div className="ns-sheet" onClick={(e) => e.stopPropagation()}>
@@ -131,12 +119,6 @@ export default function NotificationSettings({ onClose }) {
                 </button>
               ))}
             </div>
-
-            {enabled && (
-              <button className="ns-test" onClick={handleTest} disabled={busy}>
-                テスト通知を送る
-              </button>
-            )}
 
             {msg && <p className="ns-msg">{msg}</p>}
             <p className="ns-fine">

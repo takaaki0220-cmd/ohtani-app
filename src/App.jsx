@@ -354,6 +354,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [showNotif, setShowNotif] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0) // 再試行ボタンで増分して再読み込み
 
   // PWA standalone モード検出 → html に class を付ける（CSS media query のフォールバック）
   useEffect(() => {
@@ -406,7 +407,7 @@ function App() {
     }
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [reloadKey])
 
   const toggleSelect = (group, apiKey) => {
     setSelected((cur) => ({ ...cur, [group]: cur[group] === apiKey ? null : apiKey }))
@@ -489,7 +490,14 @@ function App() {
           </div>
         )}
         {loading && <div className="loading">読み込み中...</div>}
-        {error && <div className="error">エラー: {error}</div>}
+        {error && (
+          <div className="error">
+            <p className="error-text">読み込みに失敗しました</p>
+            <button className="retry-btn" onClick={() => setReloadKey((k) => k + 1)} disabled={loading}>
+              再試行
+            </button>
+          </div>
+        )}
         {!loading && !error && tab === 'hitting' && (
           <StatsView
             group="hitting"
