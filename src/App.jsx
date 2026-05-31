@@ -905,7 +905,10 @@ function ScheduleView({ games }) {
 
   const todayYmd = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
   const upcoming = groupSeries(games.filter((g) => g.state !== 'Final'))
-  const recent = groupSeries(games.filter((g) => g.state === 'Final')).reverse()
+  // 最近の結果は全体を降順に: シリーズの並びを逆順にし、各シリーズ内の試合も逆順（最新が一番上）
+  const recent = groupSeries(games.filter((g) => g.state === 'Final'))
+    .reverse()
+    .map((s) => ({ ...s, games: [...s.games].reverse() }))
 
   const openGame = async (g, oppName) => {
     if (g.state !== 'Final' && g.state !== 'Live') return // 予定試合は成績なし
