@@ -529,6 +529,7 @@ function App() {
         {!loading && !error && tab === 'schedule' && (
           <ScheduleView games={schedule} />
         )}
+        {tab === 'highlights' && <HighlightsView />}
       </main>
 
       <div className="footer">Data: MLB Stats API · statsapi.mlb.com</div>
@@ -538,6 +539,7 @@ function App() {
           <button className={`tabbar-btn ${tab === 'hitting' ? 'active' : ''}`} onClick={() => setTab('hitting')}>打者</button>
           <button className={`tabbar-btn ${tab === 'pitching' ? 'active' : ''}`} onClick={() => setTab('pitching')}>投手</button>
           <button className={`tabbar-btn ${tab === 'schedule' ? 'active' : ''}`} onClick={() => setTab('schedule')}>日程</button>
+          <button className={`tabbar-btn ${tab === 'highlights' ? 'active' : ''}`} onClick={() => setTab('highlights')}>ハイライト</button>
         </div>
       </nav>
       {showNotif && <NotificationSettings onClose={() => setShowNotif(false)} />}
@@ -875,6 +877,62 @@ async function fetchGameDetail(pk) {
     }
   }
   return { batting, pitching, pas }
+}
+
+function HighlightsView() {
+  const [videos, setVideos] = useState(null)
+  const [error, setError] = useState(false)
+  const [selected, setSelected] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/highlights')
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return
+        const list = d.videos || []
+        setVideos(list)
+        setSelected(list[0]?.id || null)
+      })
+      .catch(() => { if (!cancelled) setError(true) })
+    return () => { cancelled = true }
+  }, [])
+
+  if (videos === null && !error) return <div className="loading">読み込み中...</div>
+  if (error || videos.length === 0) {
+    return <div className="empty">ハイライトは準備中です</div>
+  }
+
+  return (
+    <div className="highlights">
+      {selected && (
+        <div className="hl-player">
+          <iframe
+            key={selected}
+            src={`https://www.youtube-nocookie.com/embed/${selected}`}
+            title="ハイライト動画"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+          />
+        </div>
+      )}
+      <div className="hl-list">
+        {videos.map((v) => (
+          <button
+            key={v.id}
+            className={`hl-item ${v.id === selected ? 'active' : ''}`}
+            onClick={() => setSelected(v.id)}
+          >
+            {v.thumb && <img className="hl-thumb" src={v.thumb} alt="" loading="lazy" />}
+            <span className="hl-meta">
+              <span className="hl-title">{v.title}</span>
+              <span className="hl-channel">{v.channel}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 function ScheduleView({ games }) {

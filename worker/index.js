@@ -25,6 +25,45 @@ async function sha256hex(str) {
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+// ---- YouTube ハイライト取得（YouTube Data API → KVに6時間キャッシュ） ----
+const YT_SEARCH = 'https://www.googleapis.com/youtube/v3/search'
+const HL_CACHE_KEY = 'highlights:v1'
+const HL_TTL_MS = 6 * 60 * 60 * 1000 // 6時間
+const HL_QUERY = 'Shohei Ohtani' // 後から調整可（例: '大谷翔平 ハイライト'）
+
+async function handleHighlights(env) {
+  let cached = null
+  try { cached = JSON.parse((await env.KV.get(HL_CACHE_KEY)) || 'null') } catch { cached = null }
+  // 新鮮なキャッシュがあればそのまま返す（API消費なし）
+  if (cached && Date.now() - cached.fetchedAt < HL_TTL_MS) {
+    return json({ videos: cached.videos, cached: true })
+  }
+  // キー未設定: 古いキャッシュ or 空 を返す（UIは「準備中」表示）
+  if (!env.YOUTUBE_API_KEY) {
+    return json({ videos: cached?.videos || [], error: 'no_api_key' })
+  }
+  try {
+    const u = `${YT_SEARCH}?part=snippet&type=video&order=date&videoEmbeddable=true&maxResults=12&q=${encodeURIComponent(HL_QUERY)}&key=${env.YOUTUBE_API_KEY}`
+    const r = await fetch(u)
+    if (!r.ok) throw new Error('youtube ' + r.status)
+    const d = await r.json()
+    const videos = (d.items || [])
+      .filter((it) => it.id?.videoId)
+      .map((it) => ({
+        id: it.id.videoId,
+        title: it.snippet?.title || '',
+        channel: it.snippet?.channelTitle || '',
+        publishedAt: it.snippet?.publishedAt || '',
+        thumb: it.snippet?.thumbnails?.medium?.url || it.snippet?.thumbnails?.default?.url || '',
+      }))
+    await env.KV.put(HL_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), videos }))
+    return json({ videos })
+  } catch (e) {
+    // クォータ超過・障害時は古いキャッシュにフォールバック
+    return json({ videos: cached?.videos || [], error: String(e) })
+  }
+}
+
 // ---- 購読の保存・読み込み（KV） ----
 async function loadSubscriptions(env) {
   const out = []
@@ -189,6 +228,10 @@ export default {
       const { endpoint } = await request.json().catch(() => ({}))
       if (endpoint) await env.KV.delete(`sub:${await sha256hex(endpoint)}`)
       return json({ ok: true })
+    }
+
+    if (p === '/api/highlights') {
+      return handleHighlights(env)
     }
 
     // それ以外は静的アセット（SPAフォールバックは not_found_handling が処理）

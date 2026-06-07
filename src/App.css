@@ -327,6 +327,80 @@ html.pwa-standalone .hero {
 }
 
 .tabbar-btn:active { transform: scale(0.95); }
+.tabbar-btn { white-space: nowrap; }
+
+/* ハイライト（YouTube埋め込み） */
+.highlights { padding-top: 4px; }
+
+.hl-player {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 4px 16px rgba(10, 35, 66, 0.18);
+}
+.hl-player iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.hl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+.hl-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 12px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  transition: background 0.15s;
+}
+.hl-item.active { background: var(--soft); }
+.hl-item:active { opacity: 0.6; }
+
+.hl-thumb {
+  flex-shrink: 0;
+  width: 112px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--soft-2);
+}
+
+.hl-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.hl-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.hl-channel {
+  font-size: 11px;
+  color: var(--muted);
+}
 
 .content {
   max-width: 1180px;

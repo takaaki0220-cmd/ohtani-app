@@ -49,6 +49,12 @@ https://ohtani-app.tkak2-studio.workers.dev
 - **クライアント** `src/notifications.js` / `src/NotificationSettings.jsx`: 許可要求・購読・設定
 - 制約: iOS 16.4+ かつホーム画面追加した PWA のみ。通知は最大1〜2分遅延
 
+## ハイライト動画（YouTube埋め込み）
+- **タブ**: 画面下に「ハイライト」タブ。`src/App.jsx` の `HighlightsView` が `/api/highlights` を取得し、YouTube iframe でアプリ内再生＋サムネ一覧
+- **Worker** `/api/highlights`: YouTube Data API v3 (search.list, q=「Shohei Ohtani」) を叩き、結果を KV `highlights:v1` に6時間キャッシュ。利用者の起動時はキャッシュを返すだけでAPIを消費しない
+- **APIキー**: Cloudflare のシークレット `YOUTUBE_API_KEY`（ダッシュボード/`wrangler secret`で設定。リポジトリには置かない）。未設定だとタブは「準備中」表示
+- Prime Video はDRM・埋め込み拒否・規約のためアプリ内再生不可（リンクで公式へ渡すのみ）
+
 ## 技術的に注意すべき点
 - SPA: wrangler の assets で not_found_handling = single-page-application
 - /api/* は Worker が処理、それ以外は env.ASSETS.fetch で静的配信
