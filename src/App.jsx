@@ -902,9 +902,16 @@ function HighlightsView() {
   // サムネをタップ → その動画を選び、上のプレイヤーまでスクロール
   const selectVideo = (id) => {
     setSelected(id)
-    requestAnimationFrame(() => {
-      playerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
+    // 描画反映後にスクロール（iOS standalone PWA でも確実に動くよう少し遅延＋フォールバック）
+    setTimeout(() => {
+      const el = playerRef.current
+      if (!el) return
+      try {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } catch {
+        el.scrollIntoView()
+      }
+    }, 60)
   }
 
   if (videos === null && !error) return <div className="loading">読み込み中...</div>
