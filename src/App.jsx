@@ -883,7 +883,6 @@ function HighlightsView() {
   const [videos, setVideos] = useState(null)
   const [error, setError] = useState(false)
   const [selected, setSelected] = useState(null)
-  const playerRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -899,17 +898,14 @@ function HighlightsView() {
     return () => { cancelled = true }
   }, [])
 
-  // サムネをタップ → その動画を選び、上のプレイヤーまでスクロール
+  // サムネをタップ → その動画を選び、ページTOPへスクロール（プレイヤーが見える位置に）
   const selectVideo = (id) => {
     setSelected(id)
-    // 描画反映後にスクロール（iOS standalone PWA でも確実に動くよう少し遅延＋フォールバック）
     setTimeout(() => {
-      const el = playerRef.current
-      if (!el) return
       try {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        window.scrollTo({ top: 0, behavior: 'smooth' })
       } catch {
-        el.scrollIntoView()
+        window.scrollTo(0, 0)
       }
     }, 60)
   }
@@ -922,7 +918,7 @@ function HighlightsView() {
   return (
     <div className="highlights">
       {selected && (
-        <div className="hl-player" ref={playerRef}>
+        <div className="hl-player">
           <iframe
             key={selected}
             src={`https://www.youtube-nocookie.com/embed/${selected}`}
