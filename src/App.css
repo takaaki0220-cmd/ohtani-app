@@ -339,6 +339,7 @@ html.pwa-standalone .hero {
   overflow: hidden;
   background: #000;
   box-shadow: 0 4px 16px rgba(10, 35, 66, 0.18);
+  scroll-margin-top: 12px;
 }
 .hl-player iframe {
   width: 100%;

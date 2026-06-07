@@ -883,6 +883,7 @@ function HighlightsView() {
   const [videos, setVideos] = useState(null)
   const [error, setError] = useState(false)
   const [selected, setSelected] = useState(null)
+  const playerRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -898,6 +899,14 @@ function HighlightsView() {
     return () => { cancelled = true }
   }, [])
 
+  // サムネをタップ → その動画を選び、上のプレイヤーまでスクロール
+  const selectVideo = (id) => {
+    setSelected(id)
+    requestAnimationFrame(() => {
+      playerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }
+
   if (videos === null && !error) return <div className="loading">読み込み中...</div>
   if (error || videos.length === 0) {
     return <div className="empty">ハイライトは準備中です</div>
@@ -906,7 +915,7 @@ function HighlightsView() {
   return (
     <div className="highlights">
       {selected && (
-        <div className="hl-player">
+        <div className="hl-player" ref={playerRef}>
           <iframe
             key={selected}
             src={`https://www.youtube-nocookie.com/embed/${selected}`}
@@ -921,7 +930,7 @@ function HighlightsView() {
           <button
             key={v.id}
             className={`hl-item ${v.id === selected ? 'active' : ''}`}
-            onClick={() => setSelected(v.id)}
+            onClick={() => selectVideo(v.id)}
           >
             {v.thumb && <img className="hl-thumb" src={v.thumb} alt="" loading="lazy" />}
             <span className="hl-meta">
