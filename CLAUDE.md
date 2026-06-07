@@ -51,7 +51,7 @@ https://ohtani-app.tkak2-studio.workers.dev
 
 ## ハイライト動画（YouTube埋め込み）
 - **タブ**: 画面下に「ハイライト」タブ。`src/App.jsx` の `HighlightsView` が `/api/highlights` を取得し、YouTube iframe でアプリ内再生＋サムネ一覧
-- **Worker** `/api/highlights`: YouTube Data API v3 (search.list, q=「Shohei Ohtani」) を叩き、結果を KV `highlights:v1` に6時間キャッシュ。利用者の起動時はキャッシュを返すだけでAPIを消費しない
+- **Worker** `/api/highlights`: YouTube Data API v3 で SPOTV NOW JAPAN チャンネル(@spotvnowjapan)内を検索(q=「大谷」)。channels.list の forHandle でチャンネルIDを解決→search.list。結果を KV `highlights:v2` に6時間キャッシュ。利用者の起動時はキャッシュを返すだけでAPIを消費しない。対象チャンネル/検索語は `worker/index.js` の `HL_HANDLE` / `HL_QUERY` で変更可
 - **APIキー**: Cloudflare のシークレット `YOUTUBE_API_KEY`（ダッシュボード/`wrangler secret`で設定。リポジトリには置かない）。未設定だとタブは「準備中」表示
 - Prime Video はDRM・埋め込み拒否・規約のためアプリ内再生不可（リンクで公式へ渡すのみ）
 

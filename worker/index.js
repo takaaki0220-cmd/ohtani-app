@@ -27,9 +27,20 @@ async function sha256hex(str) {
 
 // ---- YouTube ハイライト取得（YouTube Data API → KVに6時間キャッシュ） ----
 const YT_SEARCH = 'https://www.googleapis.com/youtube/v3/search'
-const HL_CACHE_KEY = 'highlights:v1'
+const YT_CHANNELS = 'https://www.googleapis.com/youtube/v3/channels'
+const HL_CACHE_KEY = 'highlights:v2'
 const HL_TTL_MS = 6 * 60 * 60 * 1000 // 6時間
-const HL_QUERY = 'Shohei Ohtani' // 後から調整可（例: '大谷翔平 ハイライト'）
+const HL_HANDLE = 'spotvnowjapan' // 対象チャンネル(@handle)。ここだけ変えれば別チャンネルに
+const HL_QUERY = '大谷' // チャンネル内の検索ワード（空にするとチャンネルの最新動画すべて）
+
+// @handle → チャンネルID(UC...) を解決
+async function resolveChannelId(env) {
+  const u = `${YT_CHANNELS}?part=id&forHandle=${encodeURIComponent(HL_HANDLE)}&key=${env.YOUTUBE_API_KEY}`
+  const r = await fetch(u)
+  if (!r.ok) throw new Error('channels ' + r.status)
+  const d = await r.json()
+  return d.items?.[0]?.id || null
+}
 
 async function handleHighlights(env) {
   let cached = null
@@ -43,7 +54,10 @@ async function handleHighlights(env) {
     return json({ videos: cached?.videos || [], error: 'no_api_key' })
   }
   try {
-    const u = `${YT_SEARCH}?part=snippet&type=video&order=date&videoEmbeddable=true&maxResults=12&q=${encodeURIComponent(HL_QUERY)}&key=${env.YOUTUBE_API_KEY}`
+    const channelId = await resolveChannelId(env)
+    if (!channelId) throw new Error('channel_not_found')
+    const qParam = HL_QUERY ? `&q=${encodeURIComponent(HL_QUERY)}` : ''
+    const u = `${YT_SEARCH}?part=snippet&type=video&order=date&videoEmbeddable=true&maxResults=12&channelId=${channelId}${qParam}&key=${env.YOUTUBE_API_KEY}`
     const r = await fetch(u)
     if (!r.ok) throw new Error('youtube ' + r.status)
     const d = await r.json()
