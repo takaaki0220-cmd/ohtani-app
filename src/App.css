@@ -648,6 +648,15 @@ html.pwa-standalone .hero {
   letter-spacing: 0.04em;
 }
 
+.headline-rank {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
 /* 二刀流 162ペース */
 .twoway-pace {
   font-size: 10px;

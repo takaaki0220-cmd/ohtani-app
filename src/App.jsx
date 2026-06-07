@@ -741,6 +741,7 @@ function StatsView({ group, stats, data, headlineLabel, leaders, leagueFilter, s
             selected={selected}
             onSelect={onSelect}
             pace={headline.pace ? paceOf(headline.v, teamGames) : null}
+            ranks={headline.ranks}
           />
         )}
         {group === 'pitching' && teamGames > 0 && (
@@ -1232,14 +1233,18 @@ function QualifierCard({ ip, teamGames }) {
   )
 }
 
-function HeadlineStat({ v, label, apiKey, selected, onSelect, pace }) {
+function HeadlineStat({ v, label, apiKey, selected, onSelect, pace, ranks }) {
   const active = selected === apiKey
+  const rankText = ranks
+    ? [ranks.nl ? `NL ${ranks.nl}位` : null, ranks.all ? `全${ranks.all}位` : null].filter(Boolean).join(' · ')
+    : null
   return (
     <button type="button" className={`headline-stat ${active ? 'active' : ''}`} onClick={() => onSelect(apiKey)}>
       <div className="num">{v ?? '—'}</div>
       <div className="headline-body">
         <div className="label">{label}</div>
         {pace != null && <div className="headline-pace">162試合換算 {pace}</div>}
+        {rankText && <div className="headline-rank">{rankText}</div>}
       </div>
     </button>
   )
