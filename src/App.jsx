@@ -826,15 +826,15 @@ const HIT_EVENTS = new Set(['Single', 'Double', 'Triple', 'Home Run'])
 // 1試合の打撃成績を1行テキストに（最近の結果の行表示用）
 function fmtBattingLine(b) {
   const parts = [`${b.atBats}打数${b.hits}安打`]
-  if (b.homeRuns > 0) parts.push(`本塁打${b.homeRuns}`)
-  if (b.rbi > 0) parts.push(`打点${b.rbi}`)
-  if (b.baseOnBalls > 0) parts.push(`四球${b.baseOnBalls}`)
-  if (b.strikeOuts > 0) parts.push(`三振${b.strikeOuts}`)
+  if (b.homeRuns > 0) parts.push(`${b.homeRuns}本塁打`)
+  if (b.rbi > 0) parts.push(`${b.rbi}打点`)
+  if (b.baseOnBalls > 0) parts.push(`${b.baseOnBalls}四球`)
+  if (b.strikeOuts > 0) parts.push(`${b.strikeOuts}三振`)
   return parts.join(' ')
 }
 // 1試合の投球成績を1行テキストに（最近の結果の行表示用）
 function fmtPitchingLine(p) {
-  return `${p.inningsPitched}回 被安打${p.hits} 自責${p.earnedRuns} 奪三振${p.strikeOuts} 与四球${p.baseOnBalls}`
+  return `${p.inningsPitched}回 ${p.hits}被安打 ${p.earnedRuns}自責点 ${p.strikeOuts}奪三振 ${p.baseOnBalls}与四球`
 }
 
 // リスト表示用: boxscore だけ取って大谷の打撃/投球サマリーを返す（軽量・playByPlayは取らない）
@@ -1165,7 +1165,7 @@ function GameDetailSheet({ detail, onClose }) {
               <div className="gd-block">
                 <div className="gd-line-label">投手</div>
                 <div className="gd-line">
-                  {pitching.inningsPitched}回 被安打{pitching.hits} 自責{pitching.earnedRuns} 奪三振{pitching.strikeOuts} 与四球{pitching.baseOnBalls}
+                  {pitching.inningsPitched}回 {pitching.hits}被安打 {pitching.earnedRuns}自責点 {pitching.strikeOuts}奪三振 {pitching.baseOnBalls}与四球
                 </div>
               </div>
             )}
@@ -1175,10 +1175,10 @@ function GameDetailSheet({ detail, onClose }) {
                 <div className="gd-line-label">打者</div>
                 <div className="gd-line">
                   {batting.atBats}打数{batting.hits}安打
-                  {batting.homeRuns > 0 && <em> 本塁打{batting.homeRuns}</em>}
-                  {batting.rbi > 0 && <span> 打点{batting.rbi}</span>}
-                  {batting.baseOnBalls > 0 && <span> 四球{batting.baseOnBalls}</span>}
-                  {batting.strikeOuts > 0 && <span> 三振{batting.strikeOuts}</span>}
+                  {batting.homeRuns > 0 && <em> {batting.homeRuns}本塁打</em>}
+                  {batting.rbi > 0 && <span> {batting.rbi}打点</span>}
+                  {batting.baseOnBalls > 0 && <span> {batting.baseOnBalls}四球</span>}
+                  {batting.strikeOuts > 0 && <span> {batting.strikeOuts}三振</span>}
                 </div>
               </div>
             )}

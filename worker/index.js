@@ -201,11 +201,11 @@ async function runScheduled(env) {
         const parts = []
         // 投手として登板した試合は投手成績も（アプリ内の試合詳細と同じ語彙）
         if (p && p.inningsPitched && p.inningsPitched !== '0.0') {
-          parts.push(`投${p.inningsPitched}回 ${p.strikeOuts}奪三振 自責${p.earnedRuns}`)
+          parts.push(`投${p.inningsPitched}回 ${p.strikeOuts}奪三振 ${p.earnedRuns}自責点`)
         }
         // 打撃は日本式（米国式「安打-打数」をやめ、5打数1安打 の形に）
         if (b && b.atBats != null) {
-          parts.push(`${b.atBats}打数${b.hits}安打${b.homeRuns ? ` 本塁打${b.homeRuns}` : ''}${b.rbi ? ` ${b.rbi}打点` : ''}`)
+          parts.push(`${b.atBats}打数${b.hits}安打${b.homeRuns ? ` ${b.homeRuns}本塁打` : ''}${b.rbi ? ` ${b.rbi}打点` : ''}`)
         }
         const line = parts.length ? ` ／ 大谷 ${parts.join(' ')}` : ''
         body = `${wl} ${dR}-${oR}（vs ${oppName}）${line}`
