@@ -1,11 +1,26 @@
-.page { min-height: 100vh; background: var(--app-bg); overflow-x: hidden; }
+.page {
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+  min-height: 0;
+  background: var(--app-bg);
+  overflow: hidden;
+}
 
-/* ボトムタブバーに隠れないよう下に余白を確保 */
-.page-shift { padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px)); }
+/* document 自体は動かさず、本文だけをスクロールさせる。
+   iOS 26 で fixed 要素が本文と一緒にずれる WebKit 不具合を回避する。 */
+.page-shift {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+}
 
 /* 引っ張って更新 */
 .ptr {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
@@ -287,7 +302,7 @@ html.pwa-standalone .hero {
 /* ボトムタブバー（画面下に固定・常駐） */
 /* 画面下に浮かぶフローティングナビ。背景は透過し、裏のスクロールが見える */
 .tabbar {
-  position: fixed;
+  position: absolute;
   left: 0;
   right: 0;
   bottom: calc(14px + env(safe-area-inset-bottom, 0px));

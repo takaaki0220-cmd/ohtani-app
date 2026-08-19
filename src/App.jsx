@@ -267,7 +267,7 @@ async function refreshApp() {
 }
 
 // 自前の引っ張って更新（iOS standalone PWA は標準機能が無いため）
-function usePullToRefresh() {
+function usePullToRefresh(scrollRef) {
   const [pull, setPull] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
   const startY = useRef(0)
@@ -278,10 +278,12 @@ function usePullToRefresh() {
     const THRESHOLD = 70
     const MAX = 120
     const RESIST = 0.5
+    const scrollRoot = scrollRef.current
+    if (!scrollRoot) return undefined
 
     function onStart(e) {
       // ドロワーが開いている時やページ最上部でない時は無効
-      if (window.scrollY > 0 || document.querySelector('.detail-side.active')) {
+      if (scrollRoot.scrollTop > 0 || document.querySelector('.detail-side.active')) {
         active.current = false
         return
       }
@@ -292,7 +294,7 @@ function usePullToRefresh() {
     function onMove(e) {
       if (!active.current || refreshing) return
       const dy = e.touches[0].clientY - startY.current
-      if (dy > 0 && window.scrollY <= 0) {
+      if (dy > 0 && scrollRoot.scrollTop <= 0) {
         const dist = Math.min(MAX, dy * RESIST)
         pullRef.current = dist
         setPull(dist)
@@ -314,15 +316,15 @@ function usePullToRefresh() {
       }
     }
 
-    window.addEventListener('touchstart', onStart, { passive: true })
-    window.addEventListener('touchmove', onMove, { passive: true })
-    window.addEventListener('touchend', onEnd, { passive: true })
+    scrollRoot.addEventListener('touchstart', onStart, { passive: true })
+    scrollRoot.addEventListener('touchmove', onMove, { passive: true })
+    scrollRoot.addEventListener('touchend', onEnd, { passive: true })
     return () => {
-      window.removeEventListener('touchstart', onStart)
-      window.removeEventListener('touchmove', onMove)
-      window.removeEventListener('touchend', onEnd)
+      scrollRoot.removeEventListener('touchstart', onStart)
+      scrollRoot.removeEventListener('touchmove', onMove)
+      scrollRoot.removeEventListener('touchend', onEnd)
     }
-  }, [refreshing])
+  }, [refreshing, scrollRef])
 
   return { pull, refreshing }
 }
@@ -340,7 +342,8 @@ function PullIndicator({ pull, refreshing }) {
 }
 
 function App() {
-  const { pull, refreshing } = usePullToRefresh()
+  const scrollRef = useRef(null)
+  const { pull, refreshing } = usePullToRefresh(scrollRef)
   const [season, setSeason] = useState(getInitialSeason())
   const [stats, setStats] = useState(null)
   const [player, setPlayer] = useState(null)
@@ -430,6 +433,7 @@ function App() {
     <div className="page">
       <PullIndicator pull={pull} refreshing={refreshing} />
       <div
+        ref={scrollRef}
         className="page-shift"
         style={{ transform: pull > 0 ? `translateY(${pull}px)` : undefined, transition: pull > 0 && !refreshing ? 'none' : 'transform 0.2s ease-out' }}
       >
@@ -903,10 +907,13 @@ function HighlightsView() {
   const selectVideo = (id) => {
     setSelected(id)
     setTimeout(() => {
+      const scrollRoot = document.querySelector('.page-shift')
       try {
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+        if (scrollRoot) scrollRoot.scrollTo({ top: 0, behavior: 'smooth' })
+        else window.scrollTo({ top: 0, behavior: 'smooth' })
       } catch {
-        window.scrollTo(0, 0)
+        if (scrollRoot) scrollRoot.scrollTop = 0
+        else window.scrollTo(0, 0)
       }
     }, 60)
   }
